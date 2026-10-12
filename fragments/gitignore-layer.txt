@@ -1,0 +1,4 @@
+# agentic-project-template (managed block — do not sort or dedupe by hand)
+mise.local.toml
+.consult-llm.local.yaml
+.roborev/

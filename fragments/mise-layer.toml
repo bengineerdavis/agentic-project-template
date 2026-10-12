@@ -1,0 +1,79 @@
+# agentic-project-template layer fragment — merged into the project's
+# mise.toml by the CLI. Keep minimal and conventionally shaped so aboyeur
+# and `mise doctor project` can extend it (spec: Boundary — stamped mise.toml
+# stays extendable). Never put personal or machine-specific values here.
+
+#:schema https://mise.jdx.dev/schema/mise.json
+
+[tools]
+# TODO(bdavis): pin roborev + alint + dotagents after backend probing
+# (mise ls-remote <backend>:<repo>; registry > aqua: > github:)
+roborev = "latest"
+alint = "latest"
+dotagents = "npm:@sentry/dotagents"
+prek = "0.5.2"
+tombi = "1.5.5"
+opencode = "1.18.32"
+
+[tasks.install]
+description = "Bootstrap agentic layer: tools, managed state, hooks"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+mise install prek tombi opencode alint dotagents
+dotagents --project install
+prek install --force
+if ! mise install roborev; then
+  echo "warn: roborev install failed (backend unverified — backlog task apt-3)" >&2
+fi
+if ! roborev init; then
+  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2
+fi
+mise run backlog-init
+'''
+
+[tasks.backlog-init]
+description = "Initialize the backlog task store (idempotent)"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+if [ -f backlog/config.yml ]; then
+  echo "backlog already initialized"
+  exit 0
+fi
+uvx --from backlog-md-py backlog-py init --defaults
+'''
+
+[tasks.dotagents-install]
+description = "Refresh dotagents managed state (skills, MCP, subagents)"
+run = "dotagents --project install"
+
+[tasks.roborev-start]
+description = "Ensure the roborev review daemon is running"
+run = "roborev start 2>/dev/null || roborev serve 2>/dev/null || true"
+
+[tasks.roborev-status]
+description = "Show open fast-loop findings for the current branch"
+run = "roborev status"
+
+[tasks.roborev-fix]
+description = "Hand open findings back to the live agent (fix while fresh)"
+run = "roborev fix"
+
+[tasks.review-deep]
+description = "Slow loop: deep review of the working branch, report to docs/reviews/"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+mkdir -p docs/reviews
+opencode run --agent review-deep "Run the review-deep agent procedure for this repository."
+'''
+
+[tasks.check]
+description = "Structure enforcement: alint + tombi lint"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+alint check
+tombi lint mise.toml
+'''

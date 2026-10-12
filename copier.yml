@@ -1,0 +1,38 @@
+# Copier template: the agentic layer. Composed ON TOP of a base template by
+# the agentic-project-template CLI; can also be copied directly into an empty
+# project. See ARCHITECTURE.md for the layer map.
+
+_subdirectory: template
+_answers_file: .agentic-answers.yml
+
+project_name:
+  type: str
+  help: Human-readable project name (README, AGENTS.md)
+
+description:
+  type: str
+  help: One-line description used in README and agent context
+  default: ""
+
+# L2 — agent orchestration
+include_consult_llm:
+  type: bool
+  default: false
+  help: Second opinions via raine/consult-llm (/consult, /debate skills, opencode backend)
+
+# L3 — LLM dependency management
+mcp_servers:
+  type: yaml
+  default: []
+  help: MCP servers to declare at stamp time (list of {name, source}); more can be added later via the add-mcp skill
+
+extra_skills:
+  type: yaml
+  default: []
+  help: Extra skills to declare in agents.toml (list of {name, source}); the defaults come from the layer itself
+
+# L7 — attribution
+include_git_ai:
+  type: bool
+  default: false
+  help: git-ai attribution tasks, docs, and glossary terms (inherited from copier-mise-sandbox)

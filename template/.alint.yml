@@ -1,0 +1,8 @@
+# managed by agentic-project-template
+version: 1
+extends:
+  - alint://bundled/oss-baseline@v1
+  - alint://bundled/agent-hygiene@v1
+  - alint://bundled/agent-context@v1
+  - alint://bundled/python@v1
+  - alint://bundled/ci/github-actions@v1

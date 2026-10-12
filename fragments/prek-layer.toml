@@ -1,0 +1,28 @@
+# agentic-project-template layer fragment — prek native config (prek.toml).
+# The CLI merges the [[repos]] entries below into the project's prek.toml
+# (creating it if absent); a legacy .pre-commit-config.yaml is appended to in
+# its own format instead, so prek never silently drops existing hooks.
+#:schema https://www.schemastore.org/prek.json
+
+# No generic builtin hooks here: alint owns trailing whitespace, final
+# newlines, and merge markers (spec: Enforcement — checkers do not overlap).
+# Language linters for code come from the base template, not from this layer.
+
+[[repos]]
+repo = "https://github.com/tombi-toml/tombi-pre-commit"
+rev = "v1.2.0"
+hooks = [
+  { id = "tombi-lint", args = ["--offline"] },
+  { id = "tombi-format", args = ["--offline"] },
+]
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "alint-check"
+name = "alint check"
+entry = "alint check"
+language = "system"
+pass_filenames = false
+always_run = true

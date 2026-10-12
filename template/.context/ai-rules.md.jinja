@@ -1,0 +1,44 @@
+# ai-rules — {{ project_name }}
+
+Tier 1 — injected in every opencode session. Keep under 100 lines.
+
+## What this project is
+
+{{ description or project_name }}. The agentic layer (stamped by
+agentic-project-template) owns review loops, agent orchestration, LLM
+dependencies, task and attribution conventions, and structure enforcement.
+Language and build concerns live in the base project; do not confuse the two.
+
+## Working rules
+
+- Agent work is defined before it starts: a backlog task (`backlog-py task
+  create`, ids `apt-…`) stating what done means — acceptance criteria or a
+  definition of done. One task per unit of work.
+- Agent work happens isolated: one worktree per task (`wt switch <branch
+  named from the task id>`); never edit a shared checkout for task work.
+- The fast loop never needs asking: every commit is queued for background
+  review (roborev). Before claiming work done, check open findings for the
+  branch (skill: `review-findings`) and fix what is real.
+- The slow loop runs on demand (`mise run review-deep`) and when scheduled by
+  the maintainer. Its report lands in `docs/reviews/`; its retro section may
+  assign tasks — treat those as normal tasks.
+- Repetitive AI usage is a candidate for deterministic tooling. When you
+  notice a pattern repeating across sessions, record it in
+  `docs/experiments.md` instead of doing it by hand a fourth time.
+- Every skill you reference must be declared in `agents.toml` (dotagents).
+  If an instruction names a skill that is not installed, that is a defect —
+  report it, do not improvise the skill.
+- Do not add secrets or machine-specific paths to committed configs.
+  Personal tool configuration belongs to the user level, not this project.
+- `.alint.yml` enforces repository shape; its `agent` output carries fix
+  instructions — run what it says. `AGENTS.md` here is kept in step with the
+  enforced rules; do not edit the managed section by hand.
+
+## Commands
+
+- `mise run install` — bootstrap tools and managed state (dotagents install)
+- `mise run review-deep` — slow loop
+- `mise run roborev-status` / `roborev-fix` — fast loop findings
+- `mise run check` — alint + project checks
+
+<!-- managed by agentic-project-template -->

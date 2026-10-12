@@ -1,0 +1,30 @@
+# managed by agentic-project-template (dotagents project config)
+version = 1
+agents = ["opencode"]
+
+[[skills]]
+name = "commit-hygiene"
+source = "bengineerdavis/ai-prompt-library"
+
+[[skills]]
+name = "review-best-practices"
+source = "bengineerdavis/ai-prompt-library"
+{% if include_consult_llm %}
+[[skills]]
+name = "consult"
+source = "raine/consult-llm"
+
+[[skills]]
+name = "debate"
+source = "raine/consult-llm"
+{% endif %}
+{% for skill in extra_skills %}
+[[skills]]
+name = "{{ skill.name }}"
+source = "{{ skill.source }}"
+{% endfor %}
+{% for mcp in mcp_servers %}
+[[mcp]]
+name = "{{ mcp.name }}"
+source = "{{ mcp.source }}"
+{% endfor %}

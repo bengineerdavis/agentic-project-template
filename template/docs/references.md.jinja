@@ -1,0 +1,22 @@
+# References — {{ project_name }}
+
+Verified doc links only; a link lands here after it has been checked against
+the pinned version. When a pinned tool version changes, re-verify the rows
+that mention it and note the check date.
+
+## Deprecation playbook
+
+When a tool here is deprecated or its interface changes:
+
+1. Confirm on the project's own docs/changelog (not a search result).
+2. Update the pin in `mise.toml` and this page in the same change.
+3. Note the migration in `docs/experiments.md` as a `[harness]` entry.
+
+| Tool | Why here | Verified against | Link |
+| --- | --- | --- | --- |
+| roborev | fast loop | (pin at stamp) | https://www.roborev.io/docs/ |
+| dotagents | LLM dependency management | (pin at stamp) | https://dotagents.sentry.dev |
+| alint | structure enforcement | (pin at stamp) | https://alint.org/docs/ |
+| consult-llm | second opinions (opt-in) | (pin at stamp) | https://github.com/raine/consult-llm |
+
+<!-- managed by agentic-project-template -->

@@ -1,0 +1,23 @@
+# Glossary — {{ project_name }}
+
+Tier 1. Link on first use in docs.
+
+- **fast loop** — per-commit background review (roborev); findings accrue in a
+  ledger until fixed.
+- **slow loop** — scheduled or on-demand deep review writing to
+  `docs/reviews/`; includes the retro section that proposes deterministic
+  replacements for repeated AI usage.
+- **shrink** — converting repeated AI usage into deterministic tooling.
+- **layer** — one concern of the agentic layer (environment, isolation,
+  orchestration, LLM deps, loops, tasks, enforcement, attribution).
+- **agents.toml** — project-scoped dotagents manifest: pinned skills,
+  subagents, MCP servers. The machine-readable dependency list for agents.
+- **experiments log** — `docs/experiments.md`; entries tagged `[variable]`
+  (the thing under test) or `[harness]` (a deliberate change to relative
+  constants).
+{% if include_git_ai %}
+- **git-ai** — line-level AI attribution; agent checkpoints produce
+  authorship notes. See `docs/how-git-ai-works.md`.
+{% endif %}
+
+<!-- managed by agentic-project-template -->
