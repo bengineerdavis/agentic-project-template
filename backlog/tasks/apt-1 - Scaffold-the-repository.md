@@ -1,8 +1,9 @@
 ---
 id: APT-1
 title: Scaffold the repository
-status: In Progress
+status: Done
 created_date: 2026-10-12 18:14
+updated_date: 2026-10-12 21:37
 ---
 
 ## Description
@@ -22,9 +23,8 @@ Spec, architecture layer map, copier template, CLI with deterministic merge logi
 ## Implementation Notes
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
-
+Committed as 4-commit series (a0b12c9..0f80c87); update smoke verified against committed template: choices and glossary survived.
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
-
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
