@@ -1,0 +1,14 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "backlog-py": {
+      "type": "local",
+      "command": ["uvx", "--from", "backlog-md-py", "backlog-py-mcp"],
+      "enabled": true
+    }
+  },
+  "instructions": [
+    ".context/ai-rules.md",
+    ".context/glossary.md"
+  ]
+}
