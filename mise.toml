@@ -1,0 +1,65 @@
+# Development harness for THIS repository (the template itself).
+# A stamped project gets a different, generated mise fragment.
+
+#:schema https://mise.jdx.dev/schema/mise.json
+
+[tools]
+uv = "latest"
+python = "3.12"
+prek = "0.5.2"
+tombi = "1.5.5"
+copier = "9.18.2"
+opencode = "1.18.32"
+# TODO(bdavis): pin roborev once its mise backend is probed
+# (mise ls-remote <backend>:<repo>; registry > aqua: > github:, ubi removed 2027.1.0)
+
+[bootstrap.packages]
+"apt:git" = { os = "linux" }
+"apt:curl" = { os = "linux" }
+"brew:git" = { os = "macos" }
+"brew:curl" = { os = "macos" }
+
+[vars]
+stamp_root = "/tmp/opencode/stamp-matrix"
+
+[tasks.install]
+description = "Bootstrap tools, venv, and hooks"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+mise install prek tombi copier opencode || true
+uv sync --all-groups
+uv run prek install --force 2>/dev/null || prek install --force
+'''
+
+[tasks.test]
+description = "Unit tests (merge logic)"
+run = "uv run pytest tests/ -x -q"
+
+[tasks.test-template]
+description = "Stamp matrix: layer-only, with-base, existing merge, update"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+root="${TEMPLATE_STAMP_ROOT:-{{ vars.stamp_root }}}"
+rm -rf "$root" && mkdir -p "$root"
+uv run agentic-project-template layer "$root/existing" --non-interactive
+uv run agentic-project-template new "$root/fresh" --base "$PWD" --non-interactive
+if git rev-parse -q --verify HEAD >/dev/null 2>&1; then
+  dst="$root/updating"
+  uv run agentic-project-template layer "$dst" --non-interactive \
+    --set include_git_ai=true
+  git -C "$dst" init -q && git -C "$dst" add -A
+  git -C "$dst" -c user.email=fixture@local -c user.name=fixture commit -qm fixture
+  uv run agentic-project-template update "$dst"
+  grep -q "include_git_ai: true" "$dst/.agentic-answers.yml"
+  echo "update smoke OK (choices preserved)"
+else
+  echo "update smoke skipped: template repo has no commits yet"
+fi
+echo "stamp matrix OK: $root"
+'''
+
+[tasks.lint]
+description = "prek hooks on all files (tombi formats all *.toml)"
+run = "uv run prek run --all-files"
