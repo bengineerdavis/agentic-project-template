@@ -125,6 +125,16 @@ def test_wt_config_merge_never_clobbers(tmp_path: Path) -> None:
     assert any("post-start" in w for w in warnings)
 
 
+def test_task_workflow_doc_stamped(tmp_path: Path) -> None:
+    dst = tmp_path / "with-workflow"
+    dst.mkdir()
+    _stamp(dst)
+    doc = dst / "docs" / "task-workflow.md"
+    text = doc.read_text()
+    assert "wt switch --create" in text
+    assert "wt merge" in text
+
+
 def test_apply_fragments_merges_without_re_render(tmp_path: Path) -> None:
     """After copier update, only fragments run — choices must survive."""
     from agentic_project_template.stamp import apply_fragments
