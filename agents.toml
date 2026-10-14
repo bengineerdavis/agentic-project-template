@@ -1,0 +1,7 @@
+# managed by agentic-project-template (dotagents project config)
+version = 1
+agents = ["opencode"]
+
+[[skills]]
+name = "commit-hygiene"
+source = "bengineerdavis/ai-prompt-library"
