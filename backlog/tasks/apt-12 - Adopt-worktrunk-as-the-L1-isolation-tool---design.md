@@ -3,7 +3,7 @@ id: APT-12
 title: Adopt worktrunk as the L1 isolation tool - design
 status: In Progress
 created_date: 2026-10-12 18:30
-updated_date: 2026-10-12 21:37
+updated_date: 2026-10-14 07:06
 ---
 
 ## Description
@@ -23,6 +23,7 @@ max-sixty/worktrunk (wt): branch-as-identifier worktree management, post-create 
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
 assigned to branch apt-12-worktrunk-design
+started in worktree templates/agentic-project-template-apt-12
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
 ## Final Summary
 
