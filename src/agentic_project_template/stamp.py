@@ -134,6 +134,14 @@ def apply_fragments(destination: Path) -> list[str]:
         .splitlines(),
     )
 
+    wt_fragment = fragments / "wt-layer.toml"
+    wt_target = destination / ".config" / "wt.toml"
+    if wt_target.exists():
+        warnings.extend(merge_toml_file(wt_target, load_toml(wt_fragment)))
+    else:
+        wt_target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(wt_fragment, wt_target)
+
     section = (fragments / "agents-md-section.md").read_text(encoding="utf-8")
     upsert_marked_section(destination / "AGENTS.md", section)
     return warnings

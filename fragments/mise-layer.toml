@@ -14,6 +14,7 @@ dotagents = "npm:@sentry/dotagents"
 prek = "0.5.2"
 tombi = "1.5.5"
 opencode = "1.18.32"
+worktrunk = "0.80.0"
 
 [tasks.install]
 description = "Bootstrap agentic layer: tools, managed state, hooks"

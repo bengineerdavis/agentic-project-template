@@ -10,6 +10,7 @@ prek = "0.5.2"
 tombi = "1.5.5"
 copier = "9.18.2"
 opencode = "1.18.32"
+worktrunk = { version = "0.80.0", workflow = "release.yaml" }
 # TODO(bdavis): pin roborev once its mise backend is probed
 # (mise ls-remote <backend>:<repo>; registry > aqua: > github:, ubi removed 2027.1.0)
 

@@ -164,6 +164,7 @@ merge deterministically:
 | --- | --- | --- |
 | `mise.toml` | L0 fragment | TOML deep-merge of `[tools]`/`[tasks]` |
 | `prek.toml` | L6 hooks | TOML `[[repos]]` merge; a legacy `.pre-commit-config.yaml` is appended to in its own format instead, so prek never drops existing hooks |
+| `.config/wt.toml` | L1 worktree hooks | TOML deep-merge (base wins per key), created when absent |
 | `.gitignore` | L0, L4, L7 entries | append missing lines |
 | `AGENTS.md` | L2 router | insert marked section, idempotent |
 

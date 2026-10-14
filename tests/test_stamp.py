@@ -102,6 +102,29 @@ def test_agents_md_section_no_marker_growth(tmp_path: Path) -> None:
     assert "# Existing" in text
 
 
+def test_wt_config_stamped_fresh(tmp_path: Path) -> None:
+    dst = tmp_path / "with-wt"
+    dst.mkdir()
+    _stamp(dst)
+    wt = (dst / ".config" / "wt.toml").read_text()
+    assert "mise trust && mise run install" in wt
+    assert "mise run check" in wt
+
+
+def test_wt_config_merge_never_clobbers(tmp_path: Path) -> None:
+    dst = tmp_path / "has-wt"
+    (dst / ".config").mkdir(parents=True)
+    (dst / ".config" / "wt.toml").write_text(
+        'post-start = "npm run dev"\n\n[aliases]\ndeploy = "make deploy"\n'
+    )
+    warnings = _stamp(dst)
+    wt = (dst / ".config" / "wt.toml").read_text()
+    assert 'post-start = "npm run dev"' in wt  # base wins
+    assert '[aliases]' in wt and 'deploy = "make deploy"' in wt
+    assert 'pre-merge = "mise run check"' in wt  # layer fills the gap
+    assert any("post-start" in w for w in warnings)
+
+
 def test_apply_fragments_merges_without_re_render(tmp_path: Path) -> None:
     """After copier update, only fragments run — choices must survive."""
     from agentic_project_template.stamp import apply_fragments
