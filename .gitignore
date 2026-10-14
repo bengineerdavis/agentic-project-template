@@ -5,3 +5,4 @@ dist/
 .uv-cache/
 .pytest_cache/
 .agentic-answers.yml.bak
+.worktrees/
