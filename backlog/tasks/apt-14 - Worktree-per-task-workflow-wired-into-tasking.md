@@ -1,8 +1,9 @@
 ---
 id: APT-14
 title: Worktree-per-task workflow wired into tasking
-status: To Do
+status: In Progress
 created_date: 2026-10-12 18:30
+updated_date: 2026-10-14 14:19
 ---
 
 ## Description
