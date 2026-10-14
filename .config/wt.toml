@@ -1,0 +1,10 @@
+# agentic-project-template layer fragment — merged into the project's
+# .config/wt.toml by the CLI (created when absent). This is worktrunk's
+# committed project config: hooks, dev-server URL, aliases.
+
+# Bootstrap the worktree on first entry. Project hooks prompt for approval
+# on first run — that consent gate is deliberate and must not be bypassed.
+post-start = "mise trust && mise run install"
+
+# Verify before merging: the project's own check command (alint + tombi).
+pre-merge = "mise run check"
