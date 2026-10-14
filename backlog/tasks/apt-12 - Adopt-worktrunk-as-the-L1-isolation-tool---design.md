@@ -1,9 +1,9 @@
 ---
 id: APT-12
 title: Adopt worktrunk as the L1 isolation tool - design
-status: In Progress
+status: Done
 created_date: 2026-10-12 18:30
-updated_date: 2026-10-14 07:06
+updated_date: 2026-10-14 07:15
 ---
 
 ## Description
@@ -24,6 +24,7 @@ max-sixty/worktrunk (wt): branch-as-identifier worktree management, post-create 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
 assigned to branch apt-12-worktrunk-design
 started in worktree templates/agentic-project-template-apt-12
+Design recorded in ARCHITECTURE L1 + spec Behavior (commit 363c15f, merged 607a05c..ff). Confirmed: .worktrees/ layout via user config, post-start/pre-merge hooks, merge.squash=false, wt pin 0.80.0 registry. Worked inside .worktrees/apt-12 — first dogfood of the isolation rule.
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
 ## Final Summary
 
