@@ -48,13 +48,30 @@ installed, and verified.
 
 One concern: parallel agent work without stepping on each other's files.
 
-- Owned by: worktrunk (`max-sixty/worktrunk`, the `wt` binary) plus a
-  documented convention — one worktree per backlog task, branch named from
-  the task id (`apt-…`), post-create hook bootstraps the worktree with
-  `mise run install`.
-- Stamped: tool pin + worktrunk config + workflow docs (design in apt-12).
+- Owned by: worktrunk (the `wt` binary, pinned `0.80.0` via the mise
+  registry name) plus the one-worktree-per-task convention.
+- Layout: `{{ repo_path }}/.worktrees/{{ branch | sanitize }}` — inside
+  the repository, gitignored. The path template is **user-level config**
+  (`~/.config/worktrunk/config.toml`, chezmoi-managed): worktrunk
+  deliberately treats worktree placement as personal, so the layer cannot
+  and should not stamp it. Set once, applies to every repo.
+- Stamped (apt-13): `.config/wt.toml` — committed project config — with
+  `post-start = "mise trust && mise run install"` (bootstrap on first
+  entry) and `pre-merge = "mise run check"` (verify before merging), plus
+  the tool pin and workflow docs. Project hooks run only after first-run
+  approval; consent is built into the tool and must not be bypassed.
+- Merge policy: `merge.squash = false` pinned in project config. A task's
+  commit series survives the merge — one reviewable decision per commit is
+  the house rule, and the fast loop reviewed each commit individually.
+- Branch naming: branches are worktree addresses; task branches are named
+  from the backlog task id (`apt-N-slug`), so `wt switch apt-12-…` is the
+  entire navigation model.
+- Deferred: LLM commit generation (supported by worktrunk; user-level,
+  opt-in per the shrink principle); per-worktree dev-server URLs
+  (`hash_port`) where projects have servers.
 - Rationale: isolation is what makes the loops trustworthy; a review of a
-  dirty shared worktree reviews noise. Adopted 2026-10-12.
+  dirty shared worktree reviews noise. Adopted 2026-10-12; design
+  confirmed with the maintainer 2026-10-13.
 
 ### L2 — Agent orchestration
 

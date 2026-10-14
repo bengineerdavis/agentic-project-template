@@ -320,6 +320,31 @@ run locally via a mise task and in CI.
   stamping fresh directories will still destroy existing projects, which are
   the majority of real uses.
 
+### Behavior: Isolation — one worktree per task, merged without squashing
+
+Task work SHALL happen in a worktree whose branch is named from the
+backlog task id (`apt-N-slug`), created and addressed through worktrunk
+(`wt switch`). The layer SHALL stamp `.config/wt.toml` carrying the
+post-start bootstrap hook and the pre-merge verify hook, and SHALL pin
+`merge.squash = false` so a task's commit series survives the merge.
+Worktree placement (the path template) SHALL remain user-level
+configuration and SHALL NOT be stamped. Project hooks run only after
+first-run approval; the layer SHALL NOT bypass the approval gate.
+
+#### Scenario: An agent edits the shared checkout
+
+- **WHEN** task work appears in the main checkout instead of a worktree
+- **THEN** this behavior is violated; the work moves to
+  `wt switch <task-branch>` before continuing. The current session itself
+  worked in `.worktrees/apt-12` for the design that produced this rule.
+
+#### Scenario: A task produced five reviewed commits
+
+- **WHEN** the task merges to main
+- **THEN** all five commits land un-squashed, each still individually
+  reviewable and each already reviewed by the fast loop. Squashing would
+  discard the granularity the loops exist to create.
+
 ### Behavior: Work — agent work is assigned before it starts
 
 Work carried out by an agent SHALL have a task in the backlog task store
@@ -416,4 +441,4 @@ Decisions confirmed with the maintainer, 2026-10-11:
 | Base templates | Separate repositories; this layer defines only the composition contract |
 | Name | agentic-project-template (see Intent) |
 | Task management | backlog-md-py is the store (`backlog/`, ids `apt-…`); TASKS.md retired; backlog-py MCP wired for agents (2026-10-12) |
-| File isolation | worktrunk (`wt`) adopted for worktrees: one worktree per backlog task, post-create bootstrap; design details in apt-12 (2026-10-12) |
+| File isolation | worktrunk `wt` @ 0.80.0 (mise registry name); `.worktrees/` inside-repo layout via user config (chezmoi); stamped `.config/wt.toml`: post-start bootstrap + pre-merge check, `merge.squash = false` pinned; branch names from task ids. Design confirmed 2026-10-13 (apt-12) |
