@@ -59,9 +59,11 @@ base template by a thin Python CLI. `spec.md` constrains;
   including the user's global config; if a global tool cannot install,
   tasks fail even when the task needs none of them.
 - **aube (npm backend) locks**: lock dir derives from TMPDIR; a stale
-  root-owned `/tmp/fslock` blocks ALL npm: installs (user-side fix:
-  `sudo chown -R bdavis:bdavis /tmp/fslock`; inline workaround:
-  `TMPDIR=/tmp/opencode`).
+  root-owned `/tmp/fslock` blocked ALL npm: installs. Skillet was
+  user-approved 2026-10-14 (`allow_low_downloads = true` in global mise
+  config, apt-18). Residual user-side item: the durable chown
+  (`sudo chown -R bdavis:bdavis /tmp/fslock`) or a TMPDIR decision in
+  their shell env; until then run mise with `TMPDIR=/tmp/opencode`.
 - **aube supply-chain threshold**: refuses npm packages below 1,000
   weekly downloads unless `allow_low_downloads = true` is set on the tool
   entry. Hit with `@sentry/skillet` (declared globally — apt-18 tracks it).
