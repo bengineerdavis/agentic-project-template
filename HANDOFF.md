@@ -56,12 +56,26 @@ base template by a thin Python CLI. `spec.md` constrains;
 ### mise
 - Task names cannot contain colons — hyphens (`review-deep`).
 - `mise run` auto-installs **every declared tool in every config it sees**,
-  including the user's global config; if a global tool cannot install
-  (see /tmp/fslock below), tasks fail even when the task needs none of
-  them. `--skip-tools` or a hermetic `MISE_GLOBAL_CONFIG_ROOT` in tests;
-  `MISE_GLOBAL_CONFIG_ROOT` does NOT stop tool loading by itself.
-- `/tmp/fslock` is root-owned on this machine — aube cannot lock.
-  User-side fix: `sudo chown -R bdavis:bdavis /tmp/fslock`.
+  including the user's global config; if a global tool cannot install,
+  tasks fail even when the task needs none of them.
+- **aube (npm backend) locks**: lock dir derives from TMPDIR; a stale
+  root-owned `/tmp/fslock` blocks ALL npm: installs (user-side fix:
+  `sudo chown -R bdavis:bdavis /tmp/fslock`; inline workaround:
+  `TMPDIR=/tmp/opencode`).
+- **aube supply-chain threshold**: refuses npm packages below 1,000
+  weekly downloads unless `allow_low_downloads = true` is set on the tool
+  entry. Hit with `@sentry/skillet` (declared globally — apt-18 tracks it).
+  Stamped projects pinning niche npm tools may hit the same gate on fresh
+  machines; the approval is the user's consent decision, not the layer's.
+- `MISE_GLOBAL_CONFIG_ROOT` does NOT stop tool loading by itself.
+
+### worktrunk
+- Project hooks and `template-append` prompt for approval on first run;
+  `--yes` grants consent for one run only, `wt config approvals add --yes`
+  persists it. Non-interactive merges stop at the prompt by design.
+- `wt merge` on an unmerged-into-main branch runs the project's pre-merge
+  hooks in the worktree; `--no-hooks` skips (spec: Isolation — do not
+  bypass the gate casually).
 
 ### tombi / prek
 - tombi-format expands long inline TOML tables across lines, which
