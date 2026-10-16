@@ -1,4 +1,4 @@
-# HANDOFF — session context (2026-10-11 → 2026-10-15)
+# HANDOFF — session context (2026-10-11 → 2026-10-16)
 
 Scope: this repository — the agentic-layer copier template and its CLI.
 Decisions here govern THIS repo; sibling repos carry their own scoped
@@ -80,11 +80,6 @@ base template by a thin Python CLI. `spec.md` constrains;
   mise config (apt-18). Stamped projects pinning niche npm tools may hit
   the same gate on fresh machines; the approval is the user's consent
   decision, not the layer's.
-- **aube supply-chain threshold**: refuses npm packages below 1,000
-  weekly downloads unless `allow_low_downloads = true` is set on the tool
-  entry. Hit with `@sentry/skillet` (declared globally — apt-18 tracks it).
-  Stamped projects pinning niche npm tools may hit the same gate on fresh
-  machines; the approval is the user's consent decision, not the layer's.
 - `MISE_GLOBAL_CONFIG_ROOT` does NOT stop tool loading by itself.
 
 ### worktrunk
@@ -128,18 +123,17 @@ base template by a thin Python CLI. `spec.md` constrains;
   gate + pre-merge checks). The old `apt-12-worktrunk-design` branch
   and sibling worktree were removed at closure; task worktrees now
   live in `.worktrees/` per the design.
-- Board: apt-1, apt-8, apt-12–14 done; apt-18 in progress (skillet
-  approved 2026-10-14; TMPDIR workaround verified); apt-2..11 and
-  apt-15..17 queued.
+- Board: apt-1, apt-8, apt-12–14, apt-18 done; apt-19 queued (upstream
+  aube lock-dir report); apt-2..11 and apt-15..17 queued.
 - Review rounds: two full reviews done; all findings fixed (update
   overwrite+choices preservation, wheel packaging incl. copier.yml, prek
   rev dedupe, AGENTS.md marker growth, overwrite heuristic).
 
 ## Next actions
 
-1. Finish apt-18 — approval is done; the residual is user-side:
-   durable `/tmp/fslock` fix (`sudo chown -R bdavis:bdavis /tmp/fslock`)
-   or a TMPDIR decision in their shell env.
+1. apt-19 — file the upstream report: aube should default its lock dir
+   to user space (fslock resolved via `~/.zshenv` TMPDIR; hygiene rule:
+   never run mise installs under sudo).
 2. apt-3 roborev↔opencode verification; apt-4 publish aboyeur skill.
 3. apt-15 publish to GitHub; apt-16 evaluate cc relationship; apt-17
    refresh python-cli-template as the base layer (unblocks apt-2).
