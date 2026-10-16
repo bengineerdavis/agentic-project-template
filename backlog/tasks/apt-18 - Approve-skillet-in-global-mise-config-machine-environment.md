@@ -1,9 +1,9 @@
 ---
 id: APT-18
 title: Approve skillet in global mise config (machine environment)
-status: In Progress
+status: Done
 created_date: 2026-10-15 08:45
-updated_date: 2026-10-15 13:37
+updated_date: 2026-10-16 19:28
 ---
 
 ## Description
@@ -22,6 +22,7 @@ aube refuses npm:@sentry/skillet (7 weekly downloads vs 1000 threshold); it is d
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
 skillet approved in global mise config (user-approved, allow_low_downloads applied 2026-10-14); mise run install verified end-to-end with TMPDIR=/tmp/opencode. Remaining: durable /tmp/fslock fix — sudo chown -R bdavis:bdavis /tmp/fslock (needs user password) or TMPDIR in shell env.
+Closed in depth 2026-10-14: skillet approved in global mise config; /tmp/fslock chowned (user); chezmoi dot_zshenv exports TMPDIR=$HOME/.cache/tmp for all zsh incl. agent shells — aube locks verified landing in user space with /tmp untouched; install-task writability preflight stamped in layer + repo (detection with exact fix command). Nothing left to remember.
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
 ## Final Summary
 

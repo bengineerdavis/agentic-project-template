@@ -1,4 +1,4 @@
-# HANDOFF — session context (2026-10-11 → 2026-10-13)
+# HANDOFF — session context (2026-10-11 → 2026-10-15)
 
 Scope: this repository — the agentic-layer copier template and its CLI.
 Decisions here govern THIS repo; sibling repos carry their own scoped
@@ -22,7 +22,7 @@ base template by a thin Python CLI. `spec.md` constrains;
 | prek / tombi | 0.5.2 / 1.5.5 | pinned in mise.toml |
 | backlog-md-py | uv-run | dev dependency, task store + MCP |
 | roborev | unpinned | backend unprobed (apt-3) |
-| worktrunk | not installed | adoption decided, design pending (apt-12) |
+| worktrunk | 0.80.0 | mise pin; design (apt-12) + wiring (apt-13) done |
 
 ## Design decisions (do not flip casually)
 
@@ -42,8 +42,12 @@ base template by a thin Python CLI. `spec.md` constrains;
    and agentic-context linting are future lanes with named rule sources.
 6. **backlog-md-py is the task store** (L5): TASKS.md retired;
    `backlog-py-mcp` wired in opencode.json.
-7. **worktrunk adopted for L1** — one worktree per backlog task; design
-   details pending in apt-12.
+7. **worktrunk adopted for L1** — one worktree per backlog task; task
+   worktrees live in-repo at `.worktrees/` via user-level wt config;
+   the layer stamps `.config/wt.toml` (post-start bootstrap, pre-merge
+   verify hooks, `merge.squash = false` so a task's reviewed commit
+   series survives); branches named from backlog ids. Design in
+   apt-12, wiring in apt-13, workflow dogfooded in apt-14.
 8. **consult-llm and git-ai are opt-in flags, default off.**
 
 ## Gotchas learned (per tool)
@@ -58,12 +62,24 @@ base template by a thin Python CLI. `spec.md` constrains;
 - `mise run` auto-installs **every declared tool in every config it sees**,
   including the user's global config; if a global tool cannot install,
   tasks fail even when the task needs none of them.
-- **aube (npm backend) locks**: lock dir derives from TMPDIR; a stale
-  root-owned `/tmp/fslock` blocked ALL npm: installs. Skillet was
-  user-approved 2026-10-14 (`allow_low_downloads = true` in global mise
-  config, apt-18). Residual user-side item: the durable chown
-  (`sudo chown -R bdavis:bdavis /tmp/fslock`) or a TMPDIR decision in
-  their shell env; until then run mise with `TMPDIR=/tmp/opencode`.
+- **aube (npm backend) locks — resolved in depth (2026-10-14)**: aube
+  derives its lock dir from TMPDIR and defaults to shared `/tmp/fslock`;
+  a root-run once created it, poisoning every user (and /tmp here is on
+  the root fs — it never self-clears). Resolution, no memory required:
+  (1) chezmoi-deployed `~/.zshenv` exports `TMPDIR="$HOME/.cache/tmp"`
+  for every zsh incl. non-interactive agent shells — aube now locks in
+  user space, immune even if root recreates /tmp/fslock (verified:
+  lock file landed in ~/.cache/tmp/fslock, /tmp untouched);
+  (2) the install tasks carry a writability preflight that turns any
+  recurrence into the exact fix command; (3) root-cause hygiene rule:
+  never run mise installs under sudo. Upstream report queued (apt-19):
+  aube should default its lock dir to user space.
+- **aube supply-chain threshold**: refuses npm packages below 1,000
+  weekly downloads unless `allow_low_downloads = true` is set on the tool
+  entry. Hit with `@sentry/skillet` — user-approved 2026-10-14 in global
+  mise config (apt-18). Stamped projects pinning niche npm tools may hit
+  the same gate on fresh machines; the approval is the user's consent
+  decision, not the layer's.
 - **aube supply-chain threshold**: refuses npm packages below 1,000
   weekly downloads unless `allow_low_downloads = true` is set on the tool
   entry. Hit with `@sentry/skillet` (declared globally — apt-18 tracks it).
@@ -94,6 +110,12 @@ base template by a thin Python CLI. `spec.md` constrains;
   `--append-notes` plus the status works.
 - backlog "Done" ≠ archived; `cleanup` moves Done into backlog/completed.
 
+### Sessions
+- Task sessions sweep uncommitted files into their commits (observed:
+  an unrelated main-checkout `.gitignore` edit was absorbed into
+  607a05c). Keep the checkout clean — or expect edits to be committed
+  by the running session — while a task session is active.
+
 ### Tests
 - plumbum `local.env` propagates env fine — the mise isolation failure was
   mise's own global-config resolution, not env propagation.
@@ -101,22 +123,28 @@ base template by a thin Python CLI. `spec.md` constrains;
 ## Current state
 
 - `main`: foundation, template, CLI (deterministic merges), backlog
-  adoption; `apt-12-worktrunk-design` branch exists in a sibling worktree
-  (repair after the `templates/` move: run `git worktree repair` here).
-- Board: apt-1 done; apt-2..17 queued; apt-12 in progress (not started).
+  adoption; isolation designed (apt-12, 363c15f), wired (apt-13), and
+  dogfooded end-to-end (apt-14: worktree-per-task loop with approval
+  gate + pre-merge checks). The old `apt-12-worktrunk-design` branch
+  and sibling worktree were removed at closure; task worktrees now
+  live in `.worktrees/` per the design.
+- Board: apt-1, apt-8, apt-12–14 done; apt-18 in progress (skillet
+  approved 2026-10-14; TMPDIR workaround verified); apt-2..11 and
+  apt-15..17 queued.
 - Review rounds: two full reviews done; all findings fixed (update
   overwrite+choices preservation, wheel packaging incl. copier.yml, prek
   rev dedupe, AGENTS.md marker growth, overwrite heuristic).
 
 ## Next actions
 
-1. apt-12 (worktrunk design) — inside its worktree; run `/grill-with-docs`
-   (skill pending user install) against ARCHITECTURE L1.
+1. Finish apt-18 — approval is done; the residual is user-side:
+   durable `/tmp/fslock` fix (`sudo chown -R bdavis:bdavis /tmp/fslock`)
+   or a TMPDIR decision in their shell env.
 2. apt-3 roborev↔opencode verification; apt-4 publish aboyeur skill.
 3. apt-15 publish to GitHub; apt-16 evaluate cc relationship; apt-17
    refresh python-cli-template as the base layer (unblocks apt-2).
 4. User-side: install the mattpocock skills (7-skill copy + dotagents
-   sync), `sudo chown -R bdavis:bdavis /tmp/fslock`.
+   sync).
 
 ## Related repos (scoped handoffs in each)
 
