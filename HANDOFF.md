@@ -1,9 +1,30 @@
-# HANDOFF — session context (2026-10-11 → 2026-10-16)
+# HANDOFF — session context (2026-10-11 → 2026-10-18)
 
 Scope: this repository — the agentic-layer copier template and its CLI.
 Decisions here govern THIS repo; sibling repos carry their own scoped
 handoffs (copier-cat, copier-template-copier-template fork,
-copier-mise-sandbox).
+copier-mise-sandbox, python-project-template).
+
+## Session 2026-10-18 — redge bootstrap (read this first)
+
+This HANDOFF is written for the next session, which restarts under
+opencode V2 to verify roborev end-to-end (apt-21's test) — see
+"Next actions".
+
+The `redge` repository now exists (public, pushed):
+scaffold + migrated research + seeded backlog. This repo's last session
+performed the first real with-base stamp onto it, which caught six
+template defects the fixture matrix could not (closed apt-2/3/6/17 with
+that evidence) and confirmed the maintainer's per-tool-fragment direction
+(apt-20 stamped, apt-22 queued).
+
+### Commit map (2026-10-18)
+
+| Repo | Commits | What |
+| --- | --- | --- |
+| `../../redge` (pushed) | f6ea2ba scaffold (base+layer, two answers files); 013afa8 research migrated wholesale; bc09cdd backlog seeded (redge-1..11) + role/ placeholder; cba0529 layer docs + uv.lock; 6a9fac2 dotagents ignores | first real with-base stamp |
+| `../python-project-template` (local, no remote) | ac7d6da materialized base (uv, prek, ruff, typer; MIT/FSL-1.1-MIT question); 307c928 stamped answers template; 791aacf `:app` entry point + mypy dev group | unblocks apt-2/apt-17 |
+| this repo (unpushed) | 93f10df `task_prefix` question; 4a3e0ea real mise backends; b561750 description period; ffcb4d5 dotagents ignores; 4662f55 backlog bookkeeping | five session fixes + bookkeeping |
 
 ## What this is
 
@@ -18,10 +39,11 @@ base template by a thin Python CLI. `spec.md` constrains;
 | Tool | Version | Note |
 | --- | --- | --- |
 | copier | 9.18.2 | pipx user tool |
-| opencode | 1.18.32 | mise shim |
+| opencode | 1.18.32 (V1) | mise pin, stamped by the layer. **V1 cannot parse the V2 `permissions` in the global `~/.config/opencode/opencode.jsonc` → roborev reviews fail pre-start (apt-21).** 2.0.32 exists on the registry; unverified against roborev |
 | prek / tombi | 0.5.2 / 1.5.5 | pinned in mise.toml |
 | backlog-md-py | uv-run | dev dependency, task store + MCP |
-| roborev | unpinned | backend unprobed (apt-3) |
+| roborev | `github:kenn-io/roborev` (0.72.0) | hooks/daemon wired by the layer install task; agent=opencode; execution blocked on this machine (apt-21) |
+| alint | `github:asamarts/alint` | stamped rulesets: oss-baseline, agent-hygiene, agent-context, python, ci/github-actions |
 | worktrunk | 0.80.0 | mise pin; design (apt-12) + wiring (apt-13) done |
 
 ## Design decisions (do not flip casually)
@@ -49,6 +71,15 @@ base template by a thin Python CLI. `spec.md` constrains;
    series survives); branches named from backlog ids. Design in
    apt-12, wiring in apt-13, workflow dogfooded in apt-14.
 8. **consult-llm and git-ai are opt-in flags, default off.**
+9. **Per-tool fragments** — confirmed 2026-10-18 (apt-22): each stamped
+   tool owns `fragments/tools/<tool>/` (pin + tasks + hooks + gitignore +
+   AGENTS.md lines); the CLI merge applies them in one declared, tested
+   order. Replaces the cross-tool grab-bag fragments (`mise-layer.toml`
+   carries every tool's pin today). Revisit if it fights the merge engine.
+10. **Tool-docs reference library is stamped, not hoisted** — confirmed
+    2026-10-18 (apt-20): `docs/references/<tool>/` per project;
+    deterministic pull (mise task) + agent distill; refreshed from a
+    user-level schedule (chezmoi), never a project-stamped schedule.
 
 ## Gotchas learned (per tool)
 
@@ -105,6 +136,43 @@ base template by a thin Python CLI. `spec.md` constrains;
   `--append-notes` plus the status works.
 - backlog "Done" ≠ archived; `cleanup` moves Done into backlog/completed.
 
+### copier (base-template side)
+- A base template must ALSO carry its own answers template
+  (`template/.copier-answers.yml.jinja`) — copier synthesizes no answers
+  file without it, and `copier update` then cannot run for the base layer.
+  Same rule as the layer's own decision #4; found on the redge stamp.
+
+### typer (stamped CLI)
+- `[project.scripts]` must point at the app object (`cli:app`), never the
+  callback (`cli:main`): the callback is not a Typer command; the installed
+  console script crashes outside Click.
+- A standalone `--version` needs `invoke_without_command=True` on the
+  callback or "Missing command" exits 2.
+
+### uv / dev group
+- Every tool a stamped mise task invokes must be in the dev dependency
+  group: the base's `type-check` task ran `uv run mypy` while the group
+  carried only pytest. Found on the redge stamp (fixed 791aacf).
+
+### mise (tool backends)
+- Bare `[tools]` names absent from the mise registry break config parsing
+  in EVERY stamped project (mise refuses the whole mise.toml):
+  `roborev = "latest"` and `alint = "latest"` were dead on arrival, and
+  `dotagents = "npm:@sentry/dotagents"` is invalid as a version string.
+  Use `github:owner/repo` for release binaries (roborev: `kenn-io`,
+  alint: `asamarts`) and `"npm:@sentry/dotagents"` as the full tool key.
+  Probe with `mise ls-remote <backend>:<repo>` before pinning (fix 4a3e0ea).
+
+### roborev
+- `roborev check-agents` is the diagnosis entry point (per-agent pass/fail
+  with stderr). On this machine hooks install and queue fine, but every
+  job fails pre-start: the opencode agent invokes the mise-pinned V1
+  binary, which rejects the V2 `permissions` array in the global
+  `~/.config/opencode/opencode.jsonc` (chezmoi-managed). apt-21.
+- `roborev show <sha>` for a failed job prints "no review found" (nothing
+  was produced); `roborev status` shows the job table. A green
+  "hooks installed" is NOT a working fast loop — check for failed jobs.
+
 ### Sessions
 - Task sessions sweep uncommitted files into their commits (observed:
   an unrelated main-checkout `.gitignore` edit was absorbed into
@@ -115,33 +183,69 @@ base template by a thin Python CLI. `spec.md` constrains;
 - plumbum `local.env` propagates env fine — the mise isolation failure was
   mise's own global-config resolution, not env propagation.
 
-## Current state
+## Current state (2026-10-18)
 
-- `main`: foundation, template, CLI (deterministic merges), backlog
-  adoption; isolation designed (apt-12, 363c15f), wired (apt-13), and
-  dogfooded end-to-end (apt-14: worktree-per-task loop with approval
-  gate + pre-merge checks). The old `apt-12-worktrunk-design` branch
-  and sibling worktree were removed at closure; task worktrees now
-  live in `.worktrees/` per the design.
-- Board: apt-1, apt-8, apt-12–14, apt-18 done; apt-19 queued (upstream
-  aube lock-dir report); apt-2..11 and apt-15..17 queued.
-- Review rounds: two full reviews done; all findings fixed (update
-  overwrite+choices preservation, wheel packaging incl. copier.yml, prek
-  rev dedupe, AGENTS.md marker growth, overwrite heuristic).
+- `main` ahead of origin (unpushed): five session fixes
+  (93f10df/4a3e0ea/b561750/ffcb4d5) + bookkeeping (4662f55) + apt-22 +
+  this HANDOFF. Push is an author action; SSH is the working protocol
+  (`git@github.com:bengineerdavis/…`).
+- Board: apt-1, 2, 3, 6, 8, 12–18 **done** (apt-2/3/6/17 closed on the
+  redge stamp's evidence). Open: apt-4, 5, 7, 9–11, 16, 19 (aube
+  upstream report), 20 (tool-docs library), 21 (roborev unblock),
+  22 (per-tool fragments).
+- The fast loop is wired but **NOT reviewing on this machine** (apt-21):
+  every roborev job fails pre-start. The stamped fallback
+  (`mise run roborev-status` / `roborev-fix` + `review-findings` skill)
+  is the only findings path until apt-21 clears.
+- Review history: two full review rounds done before this session (all
+  findings fixed); this session's findings came from the live stamp
+  instead (six template defects, all fixed same-session).
 
-## Next actions
+## Next actions — the opencode v2 restart (read first)
 
-1. apt-19 — file the upstream report: aube should default its lock dir
-   to user space (fslock resolved via `~/.zshenv` TMPDIR; hygiene rule:
-   never run mise installs under sudo).
-2. apt-3 roborev↔opencode verification; apt-4 publish aboyeur skill.
-3. apt-15 publish to GitHub; apt-16 evaluate cc relationship; apt-17
-   refresh python-cli-template as the base layer (unblocks apt-2).
-4. User-side: install the mattpocock skills (7-skill copy + dotagents
-   sync).
+You are the next session, started under opencode V2 to verify roborev
+end-to-end (apt-21's test). In order:
+
+1. Confirm the harness: `opencode --version` reports 2.x and the session
+   starts cleanly — the global `~/.config/opencode/opencode.jsonc`
+   (chezmoi: `opencode.jsonc.tmpl`) is V2-shaped (`permissions` array)
+   and only V1 chokes on it. Do not hand-edit the global config; chezmoi
+   owns it.
+2. Give roborev a V2 binary: its opencode agent resolves `opencode` via
+   mise shims → the repo pin (1.18.32, V1) in `mise.toml`. For the test,
+   override locally without touching the stamped file:
+   `mise use -p mise.local.toml opencode@2.0.32` (mise.local.toml is
+   gitignored and overrides mise.toml per mise's config layering).
+3. Restart the daemon so it picks up the new resolution
+   (`roborev daemon restart`), then `roborev check-agents` — expect the
+   opencode agent to PASS.
+4. Make one commit (here or in redge) and watch it: `roborev status`
+   → job completes (not failed); `roborev show <sha>` → a review with
+   findings. Fix what is real, once, while fresh.
+5. If green: close apt-21 with that evidence; the durable fix is the
+   layer fragment's opencode pin → 2.x (every stamped project then gets
+   a working fast loop), and apt-3's fallback note simplifies to
+   "delivery verified".
+6. If red: capture `roborev check-agents` stderr verbatim into apt-21
+   and stop — do not tune the global config by hand.
+7. Push this repo (author action), then the queued work proceeds:
+   apt-19 (aube upstream report), apt-20 + apt-22 (per-tool fragments +
+   tool-docs library), apt-4/5/7/9–11/16. redge implementation starts at
+   redge-1 (`normalize`) in its own worktree:
+   `wt switch redge-1-implement-the-R7-remote-normalizer`.
+8. User-side, still outstanding from before: install the mattpocock
+   skills (7-skill copy + dotagents sync) — a maintainer action, not
+   agent work.
 
 ## Related repos (scoped handoffs in each)
 
+- `../../redge` — bootstrap complete (public, pushed): scaffold, migrated
+  research thread (`docs/research/repo-manager/`), seeded backlog
+  (`redge-1..11`). Its AGENTS.md routes to the SPEC and BOOTSTRAP.
+- `../python-project-template` — materialized base template (local repo,
+  no remote): uv + prek + ruff + typer, MIT/FSL-1.1-MIT question, stamped
+  answers template. Publishing it lets stamps use `gh:` refs instead of
+  local paths (open decision, see apt-16/17).
 - `../copier-cat` — template manager; this CLI is the prototype of its
   C1 adopt mechanics (decision tracked as apt-16).
 - `../copier-template-copier-template` — customized fork (mise + SPDX/
