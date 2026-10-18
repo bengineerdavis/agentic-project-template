@@ -20,6 +20,12 @@ include_consult_llm:
   default: false
   help: Second opinions via raine/consult-llm (/consult, /debate skills, opencode backend)
 
+# L5 — task management
+task_prefix:
+  type: str
+  default: apt
+  help: Backlog task-id prefix for this project (backlog-py ids, worktree branch names)
+
 # L3 — LLM dependency management
 mcp_servers:
   type: yaml

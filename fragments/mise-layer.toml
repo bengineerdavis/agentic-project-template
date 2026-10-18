@@ -31,7 +31,7 @@ mise install prek tombi opencode alint dotagents
 dotagents --project install
 prek install --force
 if ! mise install roborev; then
-  echo "warn: roborev install failed (backend unverified — backlog task apt-3)" >&2
+  echo "warn: roborev install failed (backend unverified)" >&2
 fi
 if ! roborev init; then
   echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2
