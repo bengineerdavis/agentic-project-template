@@ -6,11 +6,13 @@
 #:schema https://mise.jdx.dev/schema/mise.json
 
 [tools]
-# TODO(bdavis): pin roborev + alint + dotagents after backend probing
-# (mise ls-remote <backend>:<repo>; registry > aqua: > github:)
-roborev = "latest"
-alint = "latest"
-dotagents = "npm:@sentry/dotagents"
+# Backends verified by ls-remote (2026-10-18): github: for release binaries
+# (alint, roborev — bare names resolve nothing in the mise registry and
+# break config parsing in every stamped project), npm: scoped keys for
+# dotagents. Pin exact versions once the layer's own CI observes drift.
+"npm:@sentry/dotagents" = "latest"
+"github:asamarts/alint" = "latest"
+"github:kenn-io/roborev" = "latest"
 prek = "0.5.2"
 tombi = "1.5.5"
 opencode = "1.18.32"
@@ -27,10 +29,11 @@ if [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then
   echo "  fix: sudo chown -R \"$(id -un):$(id -gn)\" \"$TMPDIR/fslock\"   # or: export TMPDIR=<user-owned dir>" >&2
   exit 1
 fi
-mise install prek tombi opencode alint dotagents
+mise install prek tombi opencode
+mise install "npm:@sentry/dotagents"
 dotagents --project install
 prek install --force
-if ! mise install roborev; then
+if ! mise install "github:kenn-io/roborev"; then
   echo "warn: roborev install failed (backend unverified)" >&2
 fi
 if ! roborev init; then
