@@ -4,7 +4,7 @@ Tier 1 — injected in every opencode session. Keep under 100 lines.
 
 ## What this project is
 
-{{ description or project_name }}. The agentic layer (stamped by
+{{ (description.rstrip('.') if description else project_name) }}. The agentic layer (stamped by
 agentic-project-template) owns review loops, agent orchestration, LLM
 dependencies, task and attribution conventions, and structure enforcement.
 Language and build concerns live in the base project; do not confuse the two.
