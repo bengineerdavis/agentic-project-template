@@ -21,7 +21,10 @@ worktrunk = { version = "0.80.0", workflow = "release.yaml" }
 "brew:curl" = { os = "macos" }
 
 [vars]
-stamp_root = "/tmp/opencode/stamp-matrix"
+# Stamp-matrix scratch lives in user space, not shared /tmp: /tmp never
+# self-clears on root-fs machines and shared-tmp dirs are subject to the
+# root-owned-hazard class (apt-18/19). TEMPLATE_STAMP_ROOT still overrides.
+stamp_root = "$HOME/.cache/agentic-project-template/stamp-matrix"
 
 [tasks.install]
 description = "Bootstrap tools, venv, and hooks"
