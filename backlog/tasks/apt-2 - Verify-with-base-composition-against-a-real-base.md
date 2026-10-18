@@ -1,8 +1,9 @@
 ---
 id: APT-2
 title: Verify with-base composition against a real base
-status: To Do
+status: Done
 created_date: 2026-10-12 18:19
+updated_date: 2026-10-18 23:04
 ---
 
 ## Description
@@ -20,9 +21,8 @@ The smoke test uses this template as its own base, so both stamps share one answ
 ## Implementation Notes
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
-
+Verified on the redge composition 2026-10-18 (first real with-base stamp): base-then-layer leaves .copier-answers.yml and .agentic-answers.yml side by side; each answers file carries its own template commit so each layer re-renders independently (the layer CLI update path re-renders layer answers only, then fragment merges; base updates through its own answers file). Stamp matrix green (21 tests).
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
-
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->

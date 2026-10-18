@@ -1,8 +1,9 @@
 ---
 id: APT-17
 title: Refresh python-cli-template as the base project layer
-status: To Do
+status: Done
 created_date: 2026-10-13 06:00
+updated_date: 2026-10-18 23:04
 ---
 
 ## Description
@@ -21,9 +22,8 @@ bengineerdavis/python-cli-template exists but predates the house conventions. Re
 ## Implementation Notes
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
-
+Materialized 2026-10-18: python-project-template (local repo, commits ac7d6da..791aafc) - modern stack (uv, prek, ruff, typer; hatchling src layout), split package/import/cli names, MIT/FSL-1.1-MIT license question, stamped answers file, AGENTS.md base section. The apt layer composes onto it cleanly (agentic-project-template new --base); resolves apt-2. Publishing the base repo remains an author action.
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
-
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
