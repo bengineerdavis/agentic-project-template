@@ -29,12 +29,12 @@ if [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then
   echo "  fix: sudo chown -R \"$(id -un):$(id -gn)\" \"$TMPDIR/fslock\"   # or: export TMPDIR=<user-owned dir>" >&2
   exit 1
 fi
-mise install prek tombi opencode
+mise install prek tombi opencode "github:asamarts/alint"
 mise install "npm:@sentry/dotagents"
 dotagents --project install
 prek install --force
 if ! mise install "github:kenn-io/roborev"; then
-  echo "warn: roborev install failed (backend unverified)" >&2
+  echo "warn: roborev install failed (github:kenn-io/roborev — continuing without it)" >&2
 fi
 if ! roborev init; then
   echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2

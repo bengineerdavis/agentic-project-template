@@ -1,3 +1,4 @@
+import tomllib
 from pathlib import Path
 
 from agentic_project_template.stamp import apply_layer, default_data, render_layer
@@ -164,3 +165,21 @@ def test_opt_in_flags_render(tmp_path: Path) -> None:
     assert "raine/consult-llm" in agents
     assert "[[mcp]]" in agents and "context7" in agents
     assert (dst / ".consult-llm.yaml").exists() is False  # consult config is a follow-up task
+
+
+def test_tools_values_are_versions_not_backend_specs(tmp_path: Path) -> None:
+    """A backend prefix in a tool VALUE is TOML-valid but mise-fatal: mise
+    reads the value as a version and dies resolving it before any task runs
+    (dotagents = "npm:@sentry/dotagents" broke every stamped project).
+    Backend prefixes belong in tool keys, not values.
+    """
+    dst = tmp_path / "fresh-project"
+    dst.mkdir()
+    _stamp(dst)
+    tools = tomllib.loads((dst / "mise.toml").read_text())["tools"]
+    for key, value in tools.items():
+        assert ":" not in str(value), (
+            f"tools[{key!r}] = {value!r} carries a colon: mise resolves the "
+            "value as a version and fails — put the backend prefix in the "
+            'key (e.g. "github:org/repo") instead'
+        )
