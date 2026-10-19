@@ -171,13 +171,21 @@ def test_tools_values_are_versions_not_backend_specs(tmp_path: Path) -> None:
     """A backend prefix in a tool VALUE is TOML-valid but mise-fatal: mise
     reads the value as a version and dies resolving it before any task runs
     (dotagents = "npm:@sentry/dotagents" broke every stamped project).
-    Backend prefixes belong in tool keys, not values.
+    Backend prefixes belong in tool keys, not values. Table-shaped entries
+    are the exception: the http backend's platforms/urls carry colons by
+    design — guard only their embedded `version` field.
     """
     dst = tmp_path / "fresh-project"
     dst.mkdir()
     _stamp(dst)
     tools = tomllib.loads((dst / "mise.toml").read_text())["tools"]
     for key, value in tools.items():
+        if isinstance(value, dict):
+            assert isinstance(value.get("version"), str) and ":" not in value["version"], (
+                f"tools[{key!r}] table entry: `version` must be a bare "
+                "version string (backend prefixes in the version break mise)"
+            )
+            continue
         assert ":" not in str(value), (
             f"tools[{key!r}] = {value!r} carries a colon: mise resolves the "
             "value as a version and fails — put the backend prefix in the "

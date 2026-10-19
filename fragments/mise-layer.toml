@@ -15,8 +15,31 @@
 "github:kenn-io/roborev" = "latest"
 prek = "0.5.2"
 tombi = "1.5.5"
-opencode = "1.18.32"
 worktrunk = "0.80.0"
+
+# opencode needs the http backend: V2 ships from opencode.ai, not GitHub
+# releases (the registry's aqua backend 404s on V2 tags), and the registry's
+# 1.x line cannot parse a V2 global config (apt-21). Bump = `version` + all
+# four URLs + all four checksums together (checksums mirror the anomalyco/tap
+# opencode-v2 brew formula).
+[tools."http:opencode"]
+version = "2.0.32"
+
+[tools."http:opencode".platforms.linux-x64]
+url = "https://opencode.ai/files/bin/2.0.32/opencode-linux-x64-baseline.tar.gz"
+checksum = "sha256:8adfbefe1d697b5d1774ab8d31630303543aa0676b9aa15d94ceb8e80a5bff69"
+
+[tools."http:opencode".platforms.linux-arm64]
+url = "https://opencode.ai/files/bin/2.0.32/opencode-linux-arm64.tar.gz"
+checksum = "sha256:c2e4f6c94f2e58a2df99cc9647bd37285569600d7435e3796152825d8c9d10382"
+
+[tools."http:opencode".platforms.macos-x64]
+url = "https://opencode.ai/files/bin/2.0.32/opencode-darwin-x64-baseline.zip"
+checksum = "sha256:25f788c18d46664d6aac8983c1a412ec169d3ff87f754e93f5026b6d1d03da6b"
+
+[tools."http:opencode".platforms.macos-arm64]
+url = "https://opencode.ai/files/bin/2.0.32/opencode-darwin-arm64.zip"
+checksum = "sha256:e431e369025ba9554445d0ea8ad65457fbca59aa385ca790724ec6ab488d271b"
 
 [tasks.install]
 description = "Bootstrap agentic layer: tools, managed state, hooks"
@@ -29,7 +52,7 @@ if [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then
   echo "  fix: sudo chown -R \"$(id -un):$(id -gn)\" \"$TMPDIR/fslock\"   # or: export TMPDIR=<user-owned dir>" >&2
   exit 1
 fi
-mise install prek tombi opencode "github:asamarts/alint"
+mise install prek tombi "http:opencode" "github:asamarts/alint"
 mise install "npm:@sentry/dotagents"
 dotagents --project install
 prek install --force
