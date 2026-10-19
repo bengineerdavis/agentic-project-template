@@ -39,7 +39,7 @@ base template by a thin Python CLI. `spec.md` constrains;
 | Tool | Version | Note |
 | --- | --- | --- |
 | copier | 9.18.2 | pipx user tool |
-| opencode | 1.18.32 (V1) | mise pin, stamped by the layer. **V1 cannot parse the V2 `permissions` in the global `~/.config/opencode/opencode.jsonc` → roborev reviews fail pre-start (apt-21).** 2.0.32 exists on the registry; unverified against roborev |
+| opencode | 2.0.32 (V2) | mise pin, stamped by the layer. Bumped 2026-10-18 from 1.18.32 (V1): V1 cannot parse the V2 `permissions` in the global `~/.config/opencode/opencode.jsonc` and dies at TUI boot with "Unexpected server error" (apt-21). roborev end-to-end still to verify |
 | prek / tombi | 0.5.2 / 1.5.5 | pinned in mise.toml |
 | backlog-md-py | uv-run | dev dependency, task store + MCP |
 | roborev | `github:kenn-io/roborev` (0.72.0) | hooks/daemon wired by the layer install task; agent=opencode; execution blocked on this machine (apt-21) |
@@ -212,10 +212,10 @@ end-to-end (apt-21's test). In order:
    and only V1 chokes on it. Do not hand-edit the global config; chezmoi
    owns it.
 2. Give roborev a V2 binary: its opencode agent resolves `opencode` via
-   mise shims → the repo pin (1.18.32, V1) in `mise.toml`. For the test,
-   override locally without touching the stamped file:
-   `mise use -p mise.local.toml opencode@2.0.32` (mise.local.toml is
-   gitignored and overrides mise.toml per mise's config layering).
+   mise shims → the repo pin (2.0.32, V2) in `mise.toml` — bumped
+   2026-10-18, so no local override is needed anymore. The escape hatch
+   remains `mise use -p mise.local.toml opencode@<ver>` (mise.local.toml
+   is gitignored and overrides mise.toml per mise's config layering).
 3. Restart the daemon so it picks up the new resolution
    (`roborev daemon restart`), then `roborev check-agents` — expect the
    opencode agent to PASS.
