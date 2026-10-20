@@ -3,6 +3,7 @@ from agentic_project_template.merge import (
     deep_merge,
     load_toml,
     merge_json_file,
+    merge_mise_fragment,
     merge_prek_config,
     merge_toml_file,
     upsert_marked_section,
@@ -39,6 +40,47 @@ def test_merge_toml_file_is_idempotent(tmp_path) -> None:
     assert load_toml(target) == snapshot
     assert not second
     assert not [w for w in first if "python" in w]
+
+
+def test_merge_mise_fragment_migrates_legacy_registry_pin(tmp_path) -> None:
+    """The layer moved its opencode pin from the bare registry key to the
+    http-backend key. deep_merge never removes keys, so a pre-bump stamp
+    would keep `opencode = "1.18.32"` next to the new `http:opencode`
+    table — mise treats them as separate backend instances and shim
+    dispatch resolves the first provider, i.e. the stale V1 binary wins
+    (verified 2026-10-20). The bare key was written by an earlier layer
+    stamp, not chosen by the project, so the merge migrates layer-owned
+    state instead of preserving it.
+    """
+    target = tmp_path / "mise.toml"
+    target.write_text('[tools]\npython = "3.13"\nopencode = "1.18.32"\n')
+    overlay = {
+        "tools": {
+            "http:opencode": {"version": "2.0.32"},
+            "worktrunk": "0.80.0",
+        },
+    }
+    warnings = merge_mise_fragment(target, overlay)
+    doc = load_toml(target)
+    assert "opencode" not in doc["tools"]  # stale registry pin gone
+    assert doc["tools"]["python"] == "3.13"  # project pins untouched
+    assert doc["tools"]["http:opencode"]["version"] == "2.0.32"
+    assert any("opencode" in w for w in warnings)
+
+    # idempotent: second run is a no-op
+    assert not merge_mise_fragment(target, overlay)
+    assert load_toml(target) == doc
+
+
+def test_merge_mise_fragment_keeps_bare_key_without_backend_move(tmp_path) -> None:
+    """If the layer no longer ships an http-form pin, the merge must not
+    invent a migration: a bare key with no backend replacement stays."""
+    target = tmp_path / "mise.toml"
+    target.write_text('[tools]\nopencode = "1.18.32"\n')
+    overlay = {"tools": {"prek": "0.5.2"}}
+    warnings = merge_mise_fragment(target, overlay)
+    assert load_toml(target)["tools"]["opencode"] == "1.18.32"
+    assert not warnings
 
 
 def test_deep_merge_allows_toml_types() -> None:

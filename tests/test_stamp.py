@@ -69,6 +69,26 @@ def test_layer_stamp_existing_project_preserves_base(tmp_path: Path) -> None:
     assert not [w for w in warnings if "mise.toml" in w]
 
 
+def test_apply_fragments_migrates_legacy_registry_pin(tmp_path: Path) -> None:
+    """A project stamped before the http-backend bump carries the layer's
+    old bare `opencode` pin. apply_fragments (the update path) must remove
+    it — coexisting with `http:opencode` makes mise resolve the stale
+    registry binary first, so the apt-21 failure would persist there.
+    """
+    from agentic_project_template.stamp import apply_fragments
+
+    dst = tmp_path / "pre-bump-stamp"
+    dst.mkdir()
+    (dst / "mise.toml").write_text(
+        '[tools]\npython = "3.13"\nopencode = "1.18.32"\n'
+    )
+    apply_fragments(dst)
+    tools = tomllib.loads((dst / "mise.toml").read_text())["tools"]
+    assert "opencode" not in tools
+    assert "http:opencode" in tools
+    assert tools["python"] == "3.13"
+
+
 def test_layer_stamp_skips_unmanaged_context(tmp_path: Path) -> None:
     dst = tmp_path / "sandbox-consumer"
     (dst / ".context").mkdir(parents=True)

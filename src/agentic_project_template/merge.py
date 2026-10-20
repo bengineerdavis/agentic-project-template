@@ -89,6 +89,40 @@ def merge_toml_file(destination: Path, overlay_doc: dict) -> list[str]:
     return warnings
 
 
+def merge_mise_fragment(destination: Path, overlay_doc: dict) -> list[str]:
+    """Merge the layer's mise fragment into the project's mise.toml.
+
+    One migration beyond the plain deep-merge: when the layer's pin for a
+    tool moves to a backend-prefixed key, a project stamped before the move
+    still carries the layer's old bare key — deep_merge never removes keys,
+    so both would survive. mise treats them as separate backend instances
+    of the same tool and shim dispatch resolves the first provider, so the
+    stale pin keeps winning (opencode 1.18.32 beside http:opencode 2.0.32
+    resolves 1.18.32; verified 2026-10-20). The bare key was written by an
+    earlier layer stamp, not chosen by the project, so removing it
+    migrates layer-owned state rather than overwriting a project choice.
+    """
+    base = load_toml(destination) if destination.exists() else {}
+    warnings: list[str] = []
+    tools = base.get("tools")
+    overlay_tools = overlay_doc.get("tools")
+    if (
+        isinstance(tools, dict)
+        and isinstance(overlay_tools, dict)
+        and isinstance(tools.get("opencode"), str)
+        and isinstance(overlay_tools.get("http:opencode"), dict)
+    ):
+        del tools["opencode"]
+        warnings.append(
+            "removed legacy registry pin tools.opencode: the layer now pins "
+            "opencode as http:opencode; coexisting keys make mise resolve "
+            "the stale registry binary first"
+        )
+    merged, merge_warnings = deep_merge(base, overlay_doc)
+    dump_toml(merged, destination)
+    return warnings + merge_warnings
+
+
 def _repo_signature(entry: dict) -> tuple:
     hook_ids = frozenset(
         hook.get("id") for hook in entry.get("hooks", []) if isinstance(hook, dict)

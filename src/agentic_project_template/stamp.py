@@ -24,6 +24,7 @@ from .merge import (
     load_toml,
     load_yaml,
     merge_json_file,
+    merge_mise_fragment,
     merge_prek_config,
     merge_toml_file,
     upsert_marked_section,
@@ -118,7 +119,7 @@ def apply_fragments(destination: Path) -> list[str]:
     mise_target = destination / "mise.toml"
     if mise_target.exists():
         warnings.extend(
-            merge_toml_file(mise_target, load_toml(mise_fragment))
+            merge_mise_fragment(mise_target, load_toml(mise_fragment))
         )
     else:
         shutil.copy2(mise_fragment, mise_target)
