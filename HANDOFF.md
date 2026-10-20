@@ -162,6 +162,18 @@ base template by a thin Python CLI. `spec.md` constrains;
   Use `github:owner/repo` for release binaries (roborev: `kenn-io`,
   alint: `asamarts`) and `"npm:@sentry/dotagents"` as the full tool key.
   Probe with `mise ls-remote <backend>:<repo>` before pinning (fix 4a3e0ea).
+- A bare registry key and a backend-prefixed key for the SAME tool coexist
+  as separate backend instances (mise keys its toolset by the literal key);
+  shim dispatch resolves the first provider, so a stale bare `opencode`
+  pin next to `http:opencode` keeps serving the old binary with no warning
+  (verified 2026-10-20). The mise fragment merge migrates the layer's
+  legacy bare key (`merge_mise_fragment`); don't add backend moves without
+  extending it.
+- A string entry for a tool key in a NEARER config (mise.local.toml)
+  replaces that tool's whole table entry from farther configs — options
+  included — and with fixed http URLs the `version` is only a label:
+  changing it does not change what downloads. Overrides must copy the
+  whole block and edit url+checksum together with the version.
 
 ### roborev
 - `roborev check-agents` is the diagnosis entry point (per-agent pass/fail
@@ -214,11 +226,13 @@ end-to-end (apt-21's test). In order:
 2. Give roborev a V2 binary: its opencode agent resolves `opencode` via
    mise shims → the repo pin (2.0.32, V2) in `mise.toml`, now served by the
    http backend (V2 ships from opencode.ai, not GitHub releases) — bumped
-   2026-10-18, so no local override is needed anymore. The escape hatch
-   remains `mise use -p mise.local.toml "http:opencode@<ver>"` — keep the
-   prefix: a bare `opencode@<ver>` resolves the registry (V1), not the http
-   tool (mise.local.toml is gitignored and overrides mise.toml per mise's
-   config layering).
+   2026-10-18, so no local override is needed anymore. Escape hatch when
+   the pin misbehaves: copy the whole `[tools."http:opencode"]` block
+   (version + all four platform url/checksum pairs) into mise.local.toml
+   (gitignored, overrides mise.toml) and edit url + checksum together with
+   the version. A bare `http:opencode@<ver>` string does NOT work — it
+   replaces the whole table entry (options included), and the fixed URLs
+   treat the version as a label only.
 3. Restart the daemon so it picks up the new resolution
    (`roborev daemon restart`), then `roborev check-agents` — expect the
    opencode agent to PASS.
