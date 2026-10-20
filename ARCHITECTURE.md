@@ -162,7 +162,7 @@ merge deterministically:
 
 | Shared file | Touched by | Merge |
 | --- | --- | --- |
-| `mise.toml` | L0 fragment | TOML deep-merge of `[tools]`/`[tasks]` |
+| `mise.toml` | L0 fragment | TOML deep-merge of `[tools]`/`[tasks]`; removes the layer's legacy bare pin when the same tool moved to a backend-prefixed key (spec: Composition, backend-move scenario) |
 | `prek.toml` | L6 hooks | TOML `[[repos]]` merge; a legacy `.pre-commit-config.yaml` is appended to in its own format instead, so prek never drops existing hooks |
 | `.config/wt.toml` | L1 worktree hooks | TOML deep-merge (base wins per key), created when absent |
 | `.gitignore` | L0, L4, L7 entries | append missing lines |

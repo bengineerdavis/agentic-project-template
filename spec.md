@@ -144,6 +144,22 @@ additively and idempotently, and it SHALL verify the merge in the stamp test.
   overwrite would destroy them; this is the difference between adopting the
   layer on ten existing projects and being unable to.
 
+#### Scenario: The layer's pin for a tool moves to a backend-prefixed key
+
+- **WHEN** the merge applies the mise fragment to a `mise.toml` that still
+  carries the layer's earlier bare-registry pin for the same tool
+- **THEN** the merge removes the bare key and warns. mise keys its toolset
+  by the literal tool key, so the bare and backend-prefixed entries coexist
+  as separate backend instances and shim dispatch resolves the first
+  provider — the stale binary keeps winning silently (opencode 1.18.32
+  beside http:opencode 2.0.32 resolves 1.18.32). The bare key's provenance
+  is unverifiable and may be the project's own pin on a first stamp; the
+  removal still improves every case, because a bare registry pin for a
+  tool the layer serves from a backend resolves the old major line, which
+  cannot parse the layer's stamped config. This is the one declared
+  exception to the additive rule, and the merge warns so the removal is
+  never silent.
+
 ### Behavior: Loops — the fast loop reviews every commit
 
 The fast loop SHALL be roborev: its daemon and post-commit hook queue a
