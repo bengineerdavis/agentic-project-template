@@ -205,6 +205,16 @@ def test_tools_values_are_versions_not_backend_specs(tmp_path: Path) -> None:
                 f"tools[{key!r}] table entry: `version` must be a bare "
                 "version string (backend prefixes in the version break mise)"
             )
+            # with fixed http URLs the version is only a label: a bump that
+            # updates `version` but misses a url silently installs the OLD
+            # artifact under the NEW label (checksum still matches)
+            for platform, spec in (value.get("platforms") or {}).items():
+                url = spec.get("url", "") if isinstance(spec, dict) else ""
+                assert value["version"] in url, (
+                    f"tools[{key!r}].platforms.{platform}: url does not carry "
+                    f"version {value['version']!r} — bump urls and checksums "
+                    "together with the version"
+                )
             continue
         assert ":" not in str(value), (
             f"tools[{key!r}] = {value!r} carries a colon: mise resolves the "
