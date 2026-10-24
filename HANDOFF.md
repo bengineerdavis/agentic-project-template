@@ -103,8 +103,9 @@ base template by a thin Python CLI. `spec.md` constrains;
   lock file landed in ~/.cache/tmp/fslock, /tmp untouched);
   (2) the install tasks carry a writability preflight that turns any
   recurrence into the exact fix command; (3) root-cause hygiene rule:
-  never run mise installs under sudo. Upstream report queued (apt-19):
-  aube should default its lock dir to user space.
+  never run mise installs under sudo. Upstream report filed 2026-10-24
+  (jdx/mise#14946, apt-19 closed): aube should default its lock dir to
+  user space — suggested `XDG_CACHE_HOME/aube` or `XDG_RUNTIME_DIR/aube`.
 - **aube supply-chain threshold**: refuses npm packages below 1,000
   weekly downloads unless `allow_low_downloads = true` is set on the tool
   entry. Hit with `@sentry/skillet` — user-approved 2026-10-14 in global
@@ -201,10 +202,10 @@ base template by a thin Python CLI. `spec.md` constrains;
   (93f10df/4a3e0ea/b561750/ffcb4d5) + bookkeeping (4662f55) + apt-22 +
   this HANDOFF. Push is an author action; SSH is the working protocol
   (`git@github.com:bengineerdavis/…`).
-- Board: apt-1, 2, 3, 6, 8, 12–18 **done** (apt-2/3/6/17 closed on the
-  redge stamp's evidence). Open: apt-4, 5, 7, 9–11, 16, 19 (aube
-  upstream report), 20 (tool-docs library), 21 (roborev unblock),
-  22 (per-tool fragments).
+- Board: apt-1, 2, 3, 6, 8, 12–18, 19, 21 **done** (apt-2/3/6/17 closed on
+  the redge stamp's evidence; apt-19 closed by filing jdx/mise#14946;
+  apt-21 closed by the opencode v2 restart). Open: apt-4, 5, 7, 9–11, 16,
+  20 (tool-docs library), 22 (per-tool fragments).
 - The fast loop is wired but **NOT reviewing on this machine** (apt-21):
   every roborev job fails pre-start. The stamped fallback
   (`mise run roborev-status` / `roborev-fix` + `review-findings` skill)
@@ -246,7 +247,7 @@ end-to-end (apt-21's test). In order:
 6. If red: capture `roborev check-agents` stderr verbatim into apt-21
    and stop — do not tune the global config by hand.
 7. Push this repo (author action), then the queued work proceeds:
-   apt-19 (aube upstream report), apt-20 + apt-22 (per-tool fragments +
+   apt-20 + apt-22 (per-tool fragments +
    tool-docs library), apt-4/5/7/9–11/16. redge implementation starts at
    redge-1 (`normalize`) in its own worktree:
    `wt switch redge-1-implement-the-R7-remote-normalizer`.
