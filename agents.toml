@@ -5,3 +5,7 @@ agents = ["opencode"]
 [[skills]]
 name = "commit-hygiene"
 source = "bengineerdavis/ai-prompt-library"
+
+[[skills]]
+name = "backlog-task"
+source = "bengineerdavis/ai-prompt-library"
