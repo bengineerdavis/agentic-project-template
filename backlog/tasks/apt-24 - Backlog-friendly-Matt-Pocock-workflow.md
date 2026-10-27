@@ -1,8 +1,9 @@
 ---
 id: APT-24
 title: Backlog-friendly Matt Pocock workflow
-status: To Do
+status: In Progress
 created_date: 2026-10-26 18:35
+updated_date: 2026-10-27 06:03
 ---
 
 ## Description

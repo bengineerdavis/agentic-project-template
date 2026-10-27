@@ -5,6 +5,12 @@ reconstructed from `git log`.
 
 ## Unreleased
 
+- Added: backlog/workflow adapter for the Matt Pocock engineering skills.
+  Stamped projects get `docs/agents/issue-tracker.md`, `triage-labels.md` and
+  `domain.md`, a `backlog-workflow` skill that detects `backlog/` and maps
+  spec, tickets, claims and decisions onto backlog-md-py, an `Agent skills`
+  block in the managed AGENTS.md section, and a default `backlog-py-mcp`
+  declaration in `agents.toml`.
 - Added: initial scaffold — spec, architecture layer map (L0–L7 plus the
   checker-family table with prose/docs and agentic-context lanes), copier
   template (agentic layer), CLI with deterministic shared-file merges, stamp

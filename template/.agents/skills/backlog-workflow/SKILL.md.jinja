@@ -1,0 +1,76 @@
+---
+name: backlog-workflow
+description: Map the engineering flow (spec, tickets, implement, triage, decisions) onto this project's backlog-md-py queue. Use when backlog/ exists and the work is to plan, split, claim, or close a task, or when a flow mentions an issue tracker.
+---
+
+# backlog-workflow
+
+This project tracks work in `backlog/` with `backlog-md-py`. Use the queue
+rather than a generic tracker or `.scratch/`.
+
+## Detect first
+
+Run these checks before promising a command:
+
+```bash
+test -f backlog/config.yml && echo has-backlog || echo no-backlog
+command -v backlog-py >/dev/null && echo has-cli || echo no-cli
+```
+
+- **No `backlog/`** — the layer has not initialised the queue. Say so and run
+  `mise run backlog-init` (or ask before creating state). Do not invent
+  `.scratch/`.
+- **No `backlog-py`** — run `mise run install`. Do not fall back to editing
+  `backlog/` by hand.
+
+## Surface: MCP first, CLI second
+
+`backlog-py-mcp` is declared in `agents.toml` and installed by
+`mise run dotagents-install`. Prefer its tools:
+
+`task_list`, `task_search`, `task_view`, `task_create`, `task_edit`,
+`task_complete`, `task_board`, `project_status`,
+`orchestration_claim_task`, `orchestration_release_task`,
+`orchestration_record_run`, `orchestration_split_task`,
+`document_create`, `document_view`.
+
+The CLI is the fallback and the only path for decisions:
+
+```bash
+backlog-py task create "<title>" --definition-of-done "..." --dep <id>
+backlog-py task edit <id> --status "In Progress"
+backlog-py decision create "<title>" --status accepted
+```
+
+If the MCP tools are missing, declare the server once:
+
+```bash
+dotagents mcp add backlog-py --command backlog-py-mcp --project
+mise run dotagents-install
+```
+
+## The mapping
+
+| Flow step | Backlog action |
+|---|---|
+| `/grill-with-docs` resolves a decision | `backlog-py decision create` → `backlog/decisions/` |
+| `/to-spec` | `document_create`, path `specs/<slug>`, `metadata: {type: spec}` |
+| `/to-tickets` | one `task_create` per tracer bullet |
+| Ticket scope | `definitionOfDone` = the done condition; `acceptanceCriteria` = what the checks assert |
+| Blocking edges | `dependencies` (never prose) |
+| `/implement` start | `orchestration_claim_task` |
+| Progress | `orchestration_record_run` |
+| Finish | `task_complete`, then commit the task file |
+| `/triage` | labels; see `docs/agents/triage-labels.md` |
+| `/wayfinder` | one task plus `orchestration_split_task` children |
+
+## Rules
+
+- Never hand-edit `backlog/` files; ids, statuses and leases assume the tool
+  wrote them.
+- One task is one outcome with one done condition. Split it rather than
+  describing two in one file.
+- One task, one worktree, one PR. The branch name comes from the task id.
+- `autoCommit` is false: commit task files yourself. When the task file and the
+  work are one decision, commit them together.
+- Do not create a second decision store. ADRs belong in `backlog/decisions/`.

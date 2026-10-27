@@ -26,6 +26,11 @@ def test_layer_stamp_fresh(tmp_path: Path) -> None:
     assert (dst / ".opencode" / "opencode.json").exists()
     assert (dst / ".opencode" / "agents" / "review-deep.md").exists()
     assert (dst / "docs" / "experiments.md").exists()
+    assert (dst / "docs" / "agents" / "issue-tracker.md").exists()
+    assert (dst / "docs" / "agents" / "triage-labels.md").exists()
+    assert (dst / "docs" / "agents" / "domain.md").exists()
+    assert (dst / ".agents" / "skills" / "backlog-workflow" / "SKILL.md").exists()
+    assert "backlog-py-mcp" in (dst / "agents.toml").read_text()
 
     mise = (dst / "mise.toml").read_text()
     assert "roborev" in mise and "review-deep" in mise
@@ -34,6 +39,8 @@ def test_layer_stamp_fresh(tmp_path: Path) -> None:
     agents_md = (dst / "AGENTS.md").read_text()
     assert "BEGIN managed: agentic-project-template" in agents_md
     assert "mise run review-deep" in agents_md
+    assert "docs/agents/issue-tracker.md" in agents_md
+    assert "backlog-workflow" in agents_md
 
 
 def test_layer_stamp_existing_project_preserves_base(tmp_path: Path) -> None:
