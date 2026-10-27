@@ -1,7 +1,14 @@
 import tomllib
 from pathlib import Path
 
-from agentic_project_template.stamp import apply_layer, default_data, render_layer
+import pytest
+
+from agentic_project_template.stamp import (
+    apply_fragments,
+    apply_layer,
+    default_data,
+    render_layer,
+)
 
 
 def _stamp(destination: Path, **overrides) -> list[str]:
@@ -10,35 +17,83 @@ def _stamp(destination: Path, **overrides) -> list[str]:
     return apply_layer(tmp, destination)
 
 
-def test_layer_stamp_fresh(tmp_path: Path) -> None:
+@pytest.fixture(scope="module")
+def fresh_stamp(tmp_path_factory) -> Path:
+    """One default layer stamp shared by behavior tests (read-only)."""
+    dst = tmp_path_factory.mktemp("fresh-stamp") / "fresh-project"
+    dst.mkdir()
+    _stamp(dst)
+    return dst
+
+
+def test_fresh_stamp_emits_no_warnings(tmp_path: Path) -> None:
     dst = tmp_path / "fresh-project"
     dst.mkdir()
-    warnings = _stamp(dst)
-    assert warnings == []
+    assert _stamp(dst) == []
 
-    assert (dst / ".agentic-answers.yml").exists()
-    agents = (dst / "agents.toml").read_text()
-    assert "commit-hygiene" in agents and "bengineerdavis/ai-prompt-library" in agents
-    assert "consult" not in agents  # opt-in default off
-    assert (dst / ".alint.yml").exists()
-    assert "agent-hygiene" in (dst / ".alint.yml").read_text()
-    assert (dst / ".context" / "ai-rules.md").exists()
-    assert (dst / ".opencode" / "opencode.json").exists()
-    assert (dst / ".opencode" / "agents" / "review-deep.md").exists()
-    assert (dst / "docs" / "experiments.md").exists()
-    assert (dst / "docs" / "agents" / "issue-tracker.md").exists()
-    assert (dst / "docs" / "agents" / "triage-labels.md").exists()
-    assert (dst / "docs" / "agents" / "domain.md").exists()
-    assert (dst / ".agents" / "skills" / "backlog-workflow" / "SKILL.md").exists()
-    assert "backlog-py-mcp" in (dst / "agents.toml").read_text()
 
-    mise = (dst / "mise.toml").read_text()
+def test_stamped_project_records_layer_answers(fresh_stamp: Path) -> None:
+    assert (fresh_stamp / ".agentic-answers.yml").exists()
+
+
+def test_stamped_agents_toml_declares_core_skills(fresh_stamp: Path) -> None:
+    agents = (fresh_stamp / "agents.toml").read_text()
+    assert "commit-hygiene" in agents
+    assert "bengineerdavis/ai-prompt-library" in agents
+
+
+def test_consult_llm_is_opt_in_default_off(fresh_stamp: Path) -> None:
+    assert "consult" not in (fresh_stamp / "agents.toml").read_text()
+
+
+def test_stamped_project_gets_alint_config(fresh_stamp: Path) -> None:
+    assert "agent-hygiene" in (fresh_stamp / ".alint.yml").read_text()
+
+
+def test_stamped_project_gets_context_ai_rules(fresh_stamp: Path) -> None:
+    assert (fresh_stamp / ".context" / "ai-rules.md").exists()
+
+
+def test_stamped_project_gets_opencode_surface(fresh_stamp: Path) -> None:
+    assert (fresh_stamp / ".opencode" / "opencode.json").exists()
+    assert (fresh_stamp / ".opencode" / "agents" / "review-deep.md").exists()
+
+
+def test_stamped_project_gets_experiments_doc(fresh_stamp: Path) -> None:
+    assert (fresh_stamp / "docs" / "experiments.md").exists()
+
+
+def test_stamped_mise_carries_fast_and_slow_loop(fresh_stamp: Path) -> None:
+    mise = (fresh_stamp / "mise.toml").read_text()
     assert "roborev" in mise and "review-deep" in mise
+
+
+def test_stamped_mise_task_names_have_no_colons(fresh_stamp: Path) -> None:
+    mise = (fresh_stamp / "mise.toml").read_text()
     assert ":" not in mise.split("[tasks.")[1].split("]")[0]  # mise forbids colons
 
-    agents_md = (dst / "AGENTS.md").read_text()
+
+def test_stamped_agents_md_carries_managed_section(fresh_stamp: Path) -> None:
+    agents_md = (fresh_stamp / "AGENTS.md").read_text()
     assert "BEGIN managed: agentic-project-template" in agents_md
     assert "mise run review-deep" in agents_md
+
+
+@pytest.mark.parametrize("doc", ["issue-tracker", "triage-labels", "domain"])
+def test_stamped_project_gets_agent_doc(fresh_stamp: Path, doc: str) -> None:
+    assert (fresh_stamp / "docs" / "agents" / f"{doc}.md").exists()
+
+
+def test_stamped_project_gets_backlog_workflow_skill(fresh_stamp: Path) -> None:
+    assert (fresh_stamp / ".agents" / "skills" / "backlog-workflow" / "SKILL.md").exists()
+
+
+def test_stamped_agents_toml_declares_backlog_mcp(fresh_stamp: Path) -> None:
+    assert "backlog-py-mcp" in (fresh_stamp / "agents.toml").read_text()
+
+
+def test_stamped_agents_md_links_backlog_docs(fresh_stamp: Path) -> None:
+    agents_md = (fresh_stamp / "AGENTS.md").read_text()
     assert "docs/agents/issue-tracker.md" in agents_md
     assert "backlog-workflow" in agents_md
 
@@ -82,8 +137,6 @@ def test_apply_fragments_migrates_legacy_registry_pin(tmp_path: Path) -> None:
     it — coexisting with `http:opencode` makes mise resolve the stale
     registry binary first, so the apt-21 failure would persist there.
     """
-    from agentic_project_template.stamp import apply_fragments
-
     dst = tmp_path / "pre-bump-stamp"
     dst.mkdir()
     (dst / "mise.toml").write_text(
@@ -130,11 +183,8 @@ def test_agents_md_section_no_marker_growth(tmp_path: Path) -> None:
     assert "# Existing" in text
 
 
-def test_wt_config_stamped_fresh(tmp_path: Path) -> None:
-    dst = tmp_path / "with-wt"
-    dst.mkdir()
-    _stamp(dst)
-    wt = (dst / ".config" / "wt.toml").read_text()
+def test_wt_config_stamped_fresh(fresh_stamp: Path) -> None:
+    wt = (fresh_stamp / ".config" / "wt.toml").read_text()
     assert "mise trust && mise run install" in wt
     assert "mise run check" in wt
 
@@ -153,11 +203,8 @@ def test_wt_config_merge_never_clobbers(tmp_path: Path) -> None:
     assert any("post-start" in w for w in warnings)
 
 
-def test_task_workflow_doc_stamped(tmp_path: Path) -> None:
-    dst = tmp_path / "with-workflow"
-    dst.mkdir()
-    _stamp(dst)
-    doc = dst / "docs" / "task-workflow.md"
+def test_task_workflow_doc_stamped(fresh_stamp: Path) -> None:
+    doc = fresh_stamp / "docs" / "task-workflow.md"
     text = doc.read_text()
     assert "wt switch --create" in text
     assert "wt merge" in text
@@ -165,8 +212,6 @@ def test_task_workflow_doc_stamped(tmp_path: Path) -> None:
 
 def test_apply_fragments_merges_without_re_render(tmp_path: Path) -> None:
     """After copier update, only fragments run — choices must survive."""
-    from agentic_project_template.stamp import apply_fragments
-
     dst = tmp_path / "post-update"
     dst.mkdir()
     (dst / "mise.toml").write_text('[tools]\npython = "3.13"\n')
