@@ -21,6 +21,7 @@ Write the report to `docs/reviews/YYYY-MM-DD-<slug>.md` with:
 3. **Not checked** — state scope honestly: what you did not examine.
 
 Do not fix findings yourself; the report is the deliverable. The maintainer
-converts findings into backlog tasks (`backlog-py task create`).
+{% if include_backlog %}converts findings into backlog tasks (`backlog-py task create`).
+{% else %}triages findings into follow-up work.{% endif %}
 
 <!-- managed by agentic-project-template -->

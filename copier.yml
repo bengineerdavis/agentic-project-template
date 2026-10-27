@@ -21,6 +21,10 @@ include_consult_llm:
   help: Second opinions via raine/consult-llm (/consult, /debate skills, opencode backend)
 
 # L5 — task management
+include_backlog:
+  type: bool
+  default: true
+  help: Backlog-md-py task store (backlog/), agent docs, backlog-workflow skill, and its MCP server; opt out for projects that track work elsewhere
 task_prefix:
   type: str
   default: apt
