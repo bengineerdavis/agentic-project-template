@@ -10,7 +10,9 @@ reconstructed from `git log`.
   `domain.md`, a `backlog-workflow` skill that detects `backlog/` and maps
   spec, tickets, claims and decisions onto backlog-md-py, an `Agent skills`
   block in the managed AGENTS.md section, and a default `backlog-py-mcp`
-  declaration in `agents.toml`.
+  declaration in `agents.toml`. Opt out with `include_backlog: false` —
+  the stamp then carries no backlog trace, and updating an opted-in
+  project with the flag off removes the layer-managed wiring.
 - Added: initial scaffold — spec, architecture layer map (L0–L7 plus the
   checker-family table with prose/docs and agentic-context lanes), copier
   template (agentic layer), CLI with deterministic shared-file merges, stamp

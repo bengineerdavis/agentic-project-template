@@ -14,28 +14,7 @@ This repository carries an agentic layer managed by
   hand-edit dotagents-managed files.
 - **Isolation:** one worktree per task — `wt switch <task-id-slug>` creates
   it and bootstraps via the post-create hook; merge and clean up when done.
-- **Tasks:** agent work starts only after a backlog task exists stating what
-  done means (`uvx --from backlog-md-py backlog-py task create …`).
+- **Tasks:** agent work starts only after a task exists stating what done
+  means.
 - **Experiments:** record repeated AI usage worth converting to deterministic
   tooling in `docs/experiments.md`.
-
-## Agent skills
-
-### Issue tracker
-
-`backlog/` via `backlog-py` and `backlog-py-mcp`. See
-`docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-The five canonical roles, label strings unchanged. See
-`docs/agents/triage-labels.md`.
-
-### Domain docs
-
-Single-context: `.context/glossary.md`; ADRs in `backlog/decisions/`. See
-`docs/agents/domain.md`.
-
-The engineering flows (`/to-spec`, `/to-tickets`, `/implement`, `/triage`) use
-the `backlog-workflow` skill, which detects whether `backlog/` is present and
-maps the flow onto it.

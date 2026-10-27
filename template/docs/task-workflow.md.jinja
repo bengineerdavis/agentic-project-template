@@ -1,14 +1,15 @@
 # Task workflow — worktree per task
 
-Every backlog task runs in its own worktree; `main` stays mergeable and
+Every task runs in its own worktree; `main` stays mergeable and
 clean. Worktrunk (`wt`) manages worktrees; the layer stamps
 `.config/wt.toml` so worktrees bootstrap themselves.
 
 ## Start a task
 
-1. Assign it: `uvx --from backlog-md-py backlog-py task edit <ID> -s
+{% if include_backlog %}1. Assign it: `uvx --from backlog-md-py backlog-py task edit <ID> -s
    "In Progress"`. Commit the status change on `main`.
-2. `wt switch --create <task-id-slug> --yes` — creates the branch and the
+{% else %}1. Choose the slug the task branch will use.
+{% endif %}2. `wt switch --create <task-id-slug> --yes` — creates the branch and the
    worktree at `.worktrees/<branch>`, then the post-start hook runs
    `mise trust && mise run install`. Tool state is machine-shared, so the
    bootstrap is fast after the first time.
@@ -23,8 +24,8 @@ clean. Worktrunk (`wt`) manages worktrees; the layer stamps
    alint + tombi; full tests run in CI and via the fast loop), then the
    series merges un-squashed (`merge.squash = false` is pinned at user
    level) and the worktree cleans up.
-3. Back on `main`: `backlog-py task edit <ID> -s Done --append-notes
-   "<merged commit + evidence>"`; commit the task store.
+   {% if include_backlog %}3. Back on `main`: `backlog-py task edit <ID> -s Done --append-notes
+   "<merged commit + evidence>"`; commit the task store.{% endif %}
 
 ## Why
 

@@ -224,6 +224,43 @@ def test_apply_fragments_merges_without_re_render(tmp_path: Path) -> None:
     assert "BEGIN managed" in (dst / "AGENTS.md").read_text()
 
 
+def test_backlog_opt_out_leaves_no_trace(tmp_path: Path) -> None:
+    """include_backlog=false must stamp a project with no backlog trace:
+    no store wiring, no agent docs, no MCP, no backlog word in anything
+    the layer writes (the answers file itself is the one legitimate
+    carrier of the flag).
+    """
+    dst = tmp_path / "quiet-project"
+    dst.mkdir()
+    _stamp(dst, include_backlog=False)
+    offenders = [
+        p.relative_to(dst).as_posix()
+        for p in sorted(dst.rglob("*"))
+        if p.is_file()
+        and p.name != ".agentic-answers.yml"
+        and "backlog" in p.read_text(encoding="utf-8", errors="replace").lower()
+    ]
+    assert offenders == []
+    assert not (dst / "docs" / "agents").exists()
+    assert not (dst / ".agents" / "skills" / "backlog-workflow").exists()
+
+
+def test_backlog_opt_out_update_removes_stale_wiring(tmp_path: Path) -> None:
+    """A project stamped with backlog, then updated with the flag off:
+    apply_fragments must strip the stale wiring from the shared files it
+    owns (full-section replacement + mise strip) instead of leaving both
+    states merged.
+    """
+    dst = tmp_path / "toggled-off"
+    dst.mkdir()
+    _stamp(dst)
+    (dst / ".agentic-answers.yml").write_text("include_backlog: false\n")
+    apply_fragments(dst)
+    mise = tomllib.loads((dst / "mise.toml").read_text())
+    assert "backlog-init" not in mise.get("tasks", {})
+    assert "backlog" not in (dst / "AGENTS.md").read_text().lower()
+
+
 def test_opt_in_flags_render(tmp_path: Path) -> None:
     dst = tmp_path / "opted"
     dst.mkdir()

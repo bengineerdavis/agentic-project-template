@@ -11,9 +11,12 @@ Language and build concerns live in the base project; do not confuse the two.
 
 ## Working rules
 
-- Agent work is defined before it starts: a backlog task (`backlog-py task
+{% if include_backlog %}- Agent work is defined before it starts: a backlog task (`backlog-py task
   create`, ids `{{ task_prefix }}-…`) stating what done means — acceptance
   criteria or a definition of done. One task per unit of work.
+{% else %}- Agent work is defined before it starts: write down what done means —
+  acceptance criteria or a definition of done. One task per unit of work.
+{% endif %}
 - Agent work happens isolated: one worktree per task (`wt switch <branch
   named from the task id>`); never edit a shared checkout for task work.
   Start/finish procedure: `docs/task-workflow.md`.

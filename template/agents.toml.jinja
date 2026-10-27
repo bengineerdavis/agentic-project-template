@@ -10,11 +10,13 @@ source = "bengineerdavis/ai-prompt-library"
 name = "review-best-practices"
 source = "bengineerdavis/ai-prompt-library"
 
+{% if include_backlog %}
 # The queue's agent surface. backlog-md-py is the L5 task store, so its MCP
 # server is declared by default; `mise run dotagents-install` wires it.
 [[mcp]]
 name = "backlog-py"
-command = "backlog-py-mcp"
+command = "uvx --from backlog-md-py backlog-py-mcp"
+{% endif %}
 {% if include_consult_llm %}
 [[skills]]
 name = "consult"
