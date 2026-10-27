@@ -14,14 +14,14 @@ Run these checks before promising a command:
 
 ```bash
 test -f backlog/config.yml && echo has-backlog || echo no-backlog
-command -v backlog-py >/dev/null && echo has-cli || echo no-cli
+uvx --from backlog-md-py backlog-py --version >/dev/null 2>&1 && echo has-cli || echo no-cli
 ```
 
 - **No `backlog/`** — the layer has not initialised the queue. Say so and run
   `mise run backlog-init` (or ask before creating state). Do not invent
   `.scratch/`.
-- **No `backlog-py`** — run `mise run install`. Do not fall back to editing
-  `backlog/` by hand.
+- **No `backlog-py`** — uvx fetches it on first use; if that fails, check the
+  network and `uv`. Do not fall back to editing `backlog/` by hand.
 
 ## Surface: MCP first, CLI second
 
@@ -34,18 +34,19 @@ command -v backlog-py >/dev/null && echo has-cli || echo no-cli
 `orchestration_record_run`, `orchestration_split_task`,
 `document_create`, `document_view`.
 
-The CLI is the fallback and the only path for decisions:
+The CLI is the fallback and the only path for decisions. It runs through
+uvx — the package is not on PATH:
 
 ```bash
-backlog-py task create "<title>" --definition-of-done "..." --dep <id>
-backlog-py task edit <id> --status "In Progress"
-backlog-py decision create "<title>" --status accepted
+uvx --from backlog-md-py backlog-py task create "<title>" --definition-of-done "..." --dep <id>
+uvx --from backlog-md-py backlog-py task edit <id> --status "In Progress"
+uvx --from backlog-md-py backlog-py decision create "<title>" --status accepted
 ```
 
 If the MCP tools are missing, declare the server once:
 
 ```bash
-dotagents mcp add backlog-py --command backlog-py-mcp --project
+dotagents mcp add backlog-py --command "uvx --from backlog-md-py backlog-py-mcp" --project
 mise run dotagents-install
 ```
 
@@ -70,7 +71,8 @@ mise run dotagents-install
   wrote them.
 - One task is one outcome with one done condition. Split it rather than
   describing two in one file.
-- One task, one worktree, one PR. The branch name comes from the task id.
+- One task, one worktree, merged with `wt merge` (see
+  `docs/task-workflow.md`). The branch name comes from the task id.
 - `autoCommit` is false: commit task files yourself. When the task file and the
   work are one decision, commit them together.
 - Do not create a second decision store. ADRs belong in `backlog/decisions/`.

@@ -1,25 +1,29 @@
 # Issue tracker: backlog-md-py
 
 Work for this project lives in `backlog/` at the project root, managed by
-`backlog-md-py`. Ids use this project's prefix (see `copier.yml`
-`task_prefix`).
+`backlog-md-py`. Ids use the `{{ task_prefix }}-` prefix (recorded in
+`.agentic-answers.yml`).
 
 ## Agent surface
 
 Prefer `backlog-py-mcp`, declared in `agents.toml` and installed by
 `mise run dotagents-install`. The CLI is the fallback for verbs the server
-does not expose.
+does not expose. The CLI runs through uvx — the package is not on PATH:
 
-| Need | MCP tool | CLI fallback |
+```bash
+uvx --from backlog-md-py backlog-py <verb>
+```
+
+| Need | MCP tool | CLI verb |
 |---|---|---|
-| list, search | `task_list`, `task_search` | `backlog-py task list` |
-| read one | `task_view` | `backlog-py task <id>` |
-| create | `task_create` | `backlog-py task create "<title>"` |
-| edit | `task_edit` | `backlog-py task edit <id>` |
-| claim, release | `orchestration_claim_task`, `orchestration_release_task` | `backlog-py orchestration claim`, `release` |
-| close | `task_complete` | `backlog-py task complete <id>` |
-| board, status | `task_board`, `project_status` | `backlog-py board`, `overview` |
-| documents | `document_create`, `document_view` | `backlog-py doc create`, `view` |
+| list, search | `task_list`, `task_search` | `task list` |
+| read one | `task_view` | `task <id>` |
+| create | `task_create` | `task create "<title>"` |
+| edit | `task_edit` | `task edit <id>` |
+| claim, release | `orchestration_claim_task`, `orchestration_release_task` | `orchestration claim`, `release` |
+| close | `task_complete` | `task edit <id> -s Done` |
+| board, status | `task_board`, `project_status` | `board`, `overview` |
+| documents | `document_create`, `document_view` | `doc create`, `view` |
 
 The MCP path carries the project lock, ids and typed fields. Piping CLI text
 loses them, so it is a fallback.
@@ -34,9 +38,9 @@ loses them, so it is a fallback.
   blocking edges in `dependencies`. Never encode blockers in prose.
 - **Implementation** — `orchestration_claim_task` before work,
   `orchestration_record_run` for progress, `task_complete` at the end.
-- **Decisions** — `backlog-py decision create "<title>"` writes
-  `backlog/decisions/`. The MCP has no decision tools, so this stays a CLI
-  verb.
+- **Decisions** — `uvx --from backlog-md-py backlog-py decision create
+  "<title>"` writes `backlog/decisions/`. The MCP has no decision tools, so
+  this stays a CLI verb.
 - **Triage** — labels on tasks; see `triage-labels.md`.
 
 ## Wayfinding
