@@ -1,0 +1,4 @@
+# apt-22: fragments/ holds per-tool merge inputs (prek.toml fragments among
+# them). They are data the CLI merges into stamped projects, not hook
+# configs for this repo — stop workspace discovery from executing them.
+fragments/
