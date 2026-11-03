@@ -190,6 +190,29 @@ opinion on the report is opt-in via the consult-llm flag.
   machine-specific schedule. Scheduling is personal; the task it invokes is
   shared.
 
+### Behavior: Language intelligence — LSP servers are pinned tools, agent wiring is per-agent
+
+Language servers SHALL be pinned in the layer's per-tool mise fragments like
+any other binary (L0); the layer SHALL NOT install servers itself at stamp
+time beyond that pin. The stamped agent configuration SHALL wire the pinned
+servers through the agent's native config surface (`lsp` in
+`.opencode/opencode.json` for opencode), merged additively through
+`RENDERED_SHARED`. A server whose binary the agent auto-installs or resolves
+outside mise SHALL NOT be wired by the layer unless the pin is in the layer's
+mise fragments — the layer owns the toolchain so diagnostics are reproducible
+across machines. Wiring for other agents (claude, codex, cursor, …) SHALL be
+added per agent in this spec and ARCHITECTURE.md as those agents are adopted;
+the layer SHALL NOT build a cross-agent LSP abstraction (apt-9: the contract
+is "mise-pinned binary on PATH + per-agent config stanza", too thin to
+abstract).
+
+#### Scenario: An agent session sees planted diagnostics
+
+- **WHEN** a stamped project carries a deliberate type error and an alint
+  rule violation and an agent session opens those files
+- **THEN** the agent's LSP client surfaces both as diagnostics from the
+  mise-pinned servers, without the agent installing anything at runtime.
+
 ### Behavior: Dependencies — every referenced skill is declared
 
 Whenever the layer stamps a reference to a skill, agent, or subagent — in

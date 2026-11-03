@@ -43,6 +43,10 @@ installed, and verified.
 - Deferred strategies: containers, nix — a project may need stronger
   isolation than mise provides; that would be an additional strategy inside
   this layer, not a new layer.
+- LSP servers (apt-9): language servers are environment tools — pinned in
+  the layer's per-tool mise fragments like any other binary. The *wiring*
+  (which agent consumes them, via each agent's config) belongs to L2, not
+  here; L0 only guarantees the binary resolves on PATH through mise shims.
 
 ### L1 — File isolation & worktrees
 
@@ -82,6 +86,14 @@ One concern: how agents learn to work here and who does what.
   agent definitions, dotagents subagents.
 - Stamped: always.
 - consult-llm (second opinions, `/consult`, `/debate`) lives here, opt-in.
+- Agent-facing LSP wiring (apt-9): the `lsp` section in the stamped
+  `opencode.json` merges through `RENDERED_SHARED` like the rest of that
+  file — per-agent concerns are additive, never clobbering. Language-server
+  *pins* stay in L0 fragments; this layer only decides what each agent is
+  told to consume. Later agents (claude, codex, cursor) get their own wiring
+  note here rather than a shared abstraction (apt-11): the LSP contract is
+  "a mise-pinned binary on PATH plus a per-agent config stanza", which is
+  too thin to abstract usefully.
 
 ### L3 — LLM dependency management
 
