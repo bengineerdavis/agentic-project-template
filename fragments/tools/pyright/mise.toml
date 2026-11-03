@@ -1,0 +1,12 @@
+# pyright layer fragment — merged into the project's mise.toml by the CLI
+# (apt-10: python language server for agent LSP wiring).
+#
+# Backend verified by ls-remote + probe (2026-11-03): npm:pyright resolves
+# and runs via mise shims (node-based entry, no system python dependency).
+# opencode's builtin pyright server starts when `pyright` is on PATH, so
+# the pin alone is enough for the agent wiring — see
+# fragments/tools/opencode/agents.md for the config side (apt-9: L0 pins,
+# L2 wires).
+
+[tools]
+"npm:pyright" = "1.1.414"

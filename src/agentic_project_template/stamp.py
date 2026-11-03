@@ -123,6 +123,7 @@ def _merge_rendered(kind: str, src: Path, target: Path) -> list[str]:
 TOOL_FRAGMENT_ORDER = (
     "roborev",
     "opencode",
+    "pyright",
     "dotagents",
     "worktrunk",
     "backlog-py",

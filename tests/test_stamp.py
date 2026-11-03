@@ -59,6 +59,79 @@ def test_stamped_project_gets_opencode_surface(fresh_stamp: Path) -> None:
     assert (fresh_stamp / ".opencode" / "agents" / "review-deep.md").exists()
 
 
+def test_stamped_opencode_json_wires_lsp(fresh_stamp: Path) -> None:
+    """apt-10 AC2: the lsp section rides the RENDERED_SHARED merge — a
+    stamped project gets the alint server wired into opencode.json."""
+    import json
+
+    config = json.loads((fresh_stamp / ".opencode" / "opencode.json").read_text())
+    assert config["lsp"]["alint"]["command"] == ["alint", "lsp"]
+    assert ".md" in config["lsp"]["alint"]["extensions"]
+
+
+def test_stamped_mise_pins_python_lsp(fresh_stamp: Path) -> None:
+    """apt-10 AC1: the python language server is pinned via the layer
+    fragment so opencode's builtin pyright resolves it on PATH."""
+    import tomllib
+
+    mise = tomllib.loads((fresh_stamp / "mise.toml").read_text())
+    assert mise["tools"]["npm:pyright"] == "1.1.414"
+
+
+def test_update_merge_keeps_project_lsp_entries(tmp_path: Path) -> None:
+    """apt-10 AC2 (update path): a project's own lsp servers survive the
+    layer merge — deep_merge is additive, the layer only adds its own."""
+    import json
+
+    from agentic_project_template.merge import merge_json_file
+
+    dst = tmp_path / "opencode.json"
+    dst.write_text(json.dumps({
+        "lsp": {"rust": {"command": ["rust-analyzer"], "extensions": [".rs"]}},
+    }, indent=2))
+    merge_json_file(dst, {
+        "lsp": {"alint": {"command": ["alint", "lsp"], "extensions": [".md"]}},
+    })
+    merged = json.loads(dst.read_text())
+    assert merged["lsp"]["rust"]["command"] == ["rust-analyzer"]
+    assert merged["lsp"]["alint"]["command"] == ["alint", "lsp"]
+
+
+def test_lsp_servers_resolve_through_shims(tmp_path: Path) -> None:
+    """apt-10 AC3 smoke: the pinned binaries actually start — pyright
+    reports a version, alint lsp speaks LSP over stdio."""
+    import json
+    import subprocess
+
+    root = Path(__file__).resolve().parents[1]
+    pyright = subprocess.run(
+        ["mise", "x", "npm:pyright@1.1.414", "--", "pyright", "--version"],
+        cwd=root, capture_output=True, text=True, timeout=60,
+    )
+    assert pyright.returncode == 0, pyright.stderr
+
+    p = subprocess.Popen(
+        ["mise", "x", "github:asamarts/alint@0.21.0", "--", "alint", "lsp"],
+        cwd=root, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL, text=True,
+    )
+    try:
+        init = {"jsonrpc": "2.0", "id": 1, "method": "initialize",
+                "params": {"processId": None, "rootUri": f"file://{root}",
+                           "capabilities": {}}}
+        data = json.dumps(init)
+        p.stdin.write(f"Content-Length: {len(data)}\r\n\r\n{data}")
+        p.stdin.flush()
+        header = p.stdout.readline()
+        length = int(header.split(":")[1].strip())
+        while p.stdout.readline().strip():
+            pass
+        result = json.loads(p.stdout.read(length))
+        assert "capabilities" in result.get("result", {})
+    finally:
+        p.terminate()
+
+
 def test_stamped_project_gets_experiments_doc(fresh_stamp: Path) -> None:
     assert (fresh_stamp / "docs" / "experiments.md").exists()
 
