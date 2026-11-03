@@ -1,0 +1,17 @@
+# backlog-py layer fragment — merged into the project's mise.toml by the CLI
+# (apt-22: per-tool fragments, applied in the CLI's declared order).
+#
+# backlog-py runs through uvx, so it carries no mise [tools] pin — only its
+# store-initialization task.
+
+[tasks.backlog-init]
+description = "Initialize the backlog task store (idempotent)"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+if [ -f backlog/config.yml ]; then
+  echo "backlog already initialized"
+  exit 0
+fi
+uvx --from backlog-md-py backlog-py init --defaults
+'''

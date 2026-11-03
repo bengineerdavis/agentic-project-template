@@ -1,0 +1,19 @@
+# alint layer fragment — the tool's prek hook (merged into the project's
+# prek.toml by the CLI; apt-22: per-tool fragments, applied in the CLI's
+# declared order).
+#:schema https://www.schemastore.org/prek.json
+
+# No generic builtin hooks here: alint owns trailing whitespace, final
+# newlines, and merge markers (spec: Enforcement — checkers do not overlap).
+# Language linters for code come from the base template, not from this layer.
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "alint-check"
+name = "alint check"
+entry = "alint check"
+language = "system"
+pass_filenames = false
+always_run = true

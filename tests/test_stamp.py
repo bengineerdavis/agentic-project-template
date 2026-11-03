@@ -89,6 +89,81 @@ def test_apply_fragments_migrates_legacy_registry_pin(tmp_path: Path) -> None:
     assert tools["python"] == "3.13"
 
 
+def test_per_tool_fragments_are_declared() -> None:
+    """apt-22 AC3: the merge order is declared once in the CLI (single
+    source), and it covers every fragment directory on disk — a new
+    fragments/tools/<tool>/ dir fails the suite until the engine declares
+    it, so no tool contribution can silently join the merge unsorted.
+    """
+    from agentic_project_template.stamp import TOOL_FRAGMENT_ORDER, repo_root
+
+    tools_dir = repo_root() / "fragments" / "tools"
+    on_disk = {p.name for p in tools_dir.iterdir() if p.is_dir()}
+    assert len(TOOL_FRAGMENT_ORDER) == len(set(TOOL_FRAGMENT_ORDER)), (
+        "a tool appears twice in the declared merge order"
+    )
+    assert on_disk == set(TOOL_FRAGMENT_ORDER), (
+        f"fragment dirs and the declared order disagree: "
+        f"on-disk={sorted(on_disk)} declared={list(TOOL_FRAGMENT_ORDER)}"
+    )
+
+
+def test_grab_bag_fragments_are_drained() -> None:
+    """apt-22 AC1: every tool contribution moved to fragments/tools/<tool>/;
+    the top-level fragments carry only layer-composition content."""
+    import tomllib
+
+    from agentic_project_template.stamp import repo_root
+
+    fragments = repo_root() / "fragments"
+    assert not (fragments / "prek-layer.toml").exists()
+    assert not (fragments / "gitignore-layer.txt").exists()
+    assert not (fragments / "wt-layer.toml").exists()
+    assert (fragments / "tools" / "worktrunk" / "wt.toml").exists()
+    mise_layer = tomllib.loads((fragments / "mise-layer.toml").read_text())
+    assert "tools" not in mise_layer, "tool pins must live per tool"
+    assert set(mise_layer.get("tasks", {})) == {"install", "check"}, (
+        "mise-layer.toml carries only the layer-composition tasks "
+        "(bootstrap install + the check gate)"
+    )
+
+
+def test_stamp_merges_fragments_in_declared_order(tmp_path: Path) -> None:
+    """apt-22 AC2: the CLI merge applies per-tool fragments in one declared,
+    tested order — prek [[repos]] hook order and AGENTS.md bullet order both
+    follow it."""
+    dst = tmp_path / "ordered"
+    dst.mkdir()
+    _stamp(dst)
+
+    prek = tomllib.loads((dst / "prek.toml").read_text())["repos"]
+    repos = [entry["repo"] for entry in prek]
+    assert "tombi" in repos[0], f"declared order puts tombi first, got {repos}"
+    assert repos[1] == "local"  # alint-check follows tombi
+
+    agents_md = (dst / "AGENTS.md").read_text()
+    positions = {
+        bullet: agents_md.index(bullet)
+        for bullet in (
+            "- **Experiments:**",
+            "- **Fast loop:**",
+            "- **Slow loop:**",
+            "- **Agent dependencies:**",
+            "- **Isolation:**",
+            "- **Tasks:**",
+        )
+    }
+    ordered = sorted(positions, key=positions.get)
+    assert ordered == [
+        "- **Experiments:**",  # layer-owned bullet leads the section
+        "- **Fast loop:**",
+        "- **Slow loop:**",
+        "- **Agent dependencies:**",
+        "- **Isolation:**",
+        "- **Tasks:**",
+    ], f"AGENTS.md bullets do not follow the declared order: {ordered}"
+
+
 def test_layer_stamp_skips_unmanaged_context(tmp_path: Path) -> None:
     dst = tmp_path / "sandbox-consumer"
     (dst / ".context").mkdir(parents=True)

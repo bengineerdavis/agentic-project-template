@@ -1,0 +1,3 @@
+# dotagents-managed artifacts (agents.lock is machine state, .agents/.gitignore is generated)
+agents.lock
+.agents/.gitignore

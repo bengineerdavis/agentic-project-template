@@ -1,0 +1,13 @@
+# dotagents layer fragment — merged into the project's mise.toml by the CLI
+# (apt-22: per-tool fragments, applied in the CLI's declared order).
+#
+# Backend verified by ls-remote (2026-10-18): npm: scoped key. The bare name
+# resolves nothing in the mise registry and breaks config parsing in every
+# stamped project.
+
+[tools]
+"npm:@sentry/dotagents" = "latest"
+
+[tasks.dotagents-install]
+description = "Refresh dotagents managed state (skills, MCP, subagents)"
+run = "dotagents --project install"

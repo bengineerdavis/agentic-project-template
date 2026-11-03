@@ -1,0 +1,6 @@
+# worktrunk layer fragment — the mise pin (merged into the project's
+# mise.toml by the CLI; apt-22: per-tool fragments, applied in the CLI's
+# declared order).
+
+[tools]
+worktrunk = "0.80.0"

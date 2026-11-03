@@ -1,0 +1,17 @@
+# roborev layer fragment — merged into the project's mise.toml by the CLI
+# (apt-22: per-tool fragments, applied in the CLI's declared order).
+
+[tools]
+"github:kenn-io/roborev" = "latest"
+
+[tasks.roborev-start]
+description = "Ensure the roborev review daemon is running"
+run = "roborev start 2>/dev/null || roborev serve 2>/dev/null || true"
+
+[tasks.roborev-status]
+description = "Show open fast-loop findings for the current branch"
+run = "roborev status"
+
+[tasks.roborev-fix]
+description = "Hand open findings back to the live agent (fix while fresh)"
+run = "roborev fix"

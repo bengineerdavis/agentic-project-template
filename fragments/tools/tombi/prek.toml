@@ -1,0 +1,12 @@
+# tombi layer fragment — the tool's prek hooks (merged into the project's
+# prek.toml by the CLI; apt-22: per-tool fragments, applied in the CLI's
+# declared order).
+#:schema https://www.schemastore.org/prek.json
+
+[[repos]]
+repo = "https://github.com/tombi-toml/tombi-pre-commit"
+rev = "v1.2.0"
+hooks = [
+  { id = "tombi-lint", args = ["--offline"] },
+  { id = "tombi-format", args = ["--offline"] },
+]

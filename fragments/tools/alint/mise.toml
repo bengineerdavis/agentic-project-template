@@ -1,0 +1,8 @@
+# alint layer fragment — merged into the project's mise.toml by the CLI
+# (apt-22: per-tool fragments, applied in the CLI's declared order).
+#
+# Backend verified by ls-remote (2026-10-18): github: for the release
+# binary — the bare name resolves nothing in the mise registry.
+
+[tools]
+"github:asamarts/alint" = "latest"

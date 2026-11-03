@@ -1,0 +1,4 @@
+# consult-llm is an opt-in layer flag (default off, spec: opt-in flags);
+# its local config is machine state either way, so the line is stamped
+# unconditionally.
+.consult-llm.local.yaml

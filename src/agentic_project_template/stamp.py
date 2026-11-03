@@ -103,49 +103,107 @@ def _merge_rendered(kind: str, src: Path, target: Path) -> list[str]:
     raise ValueError(f"unknown merge kind: {kind}")
 
 
+# apt-22: per-tool fragments are applied in this declared order — the
+# single source of ordering for every shared-file merge (prek [[repos]]
+# hook order, AGENTS.md bullet order, mise [tools] appearance). Sorted-
+# directory inference is forbidden: a new fragments/tools/<tool>/ dir
+# fails test_per_tool_fragments_are_declared until it is declared here.
+TOOL_FRAGMENT_ORDER = (
+    "roborev",
+    "opencode",
+    "dotagents",
+    "worktrunk",
+    "backlog-py",
+    "tombi",
+    "alint",
+    "prek",
+    "mise",
+    "consult-llm",
+)
+
+
 def apply_fragments(destination: Path) -> list[str]:
     """Apply fragment merges for shared files the template does not carry.
 
     Called after a fresh render (apply_layer) and after `copier update` —
     never together with a defaults re-render, which would reset the user's
     layer choices (spec: two answers files).
+
+    Fragments are per tool (fragments/tools/<tool>/: mise pin + tasks,
+    prek hooks, gitignore lines, AGENTS.md lines) plus the top-level
+    layer-composition fragments (bootstrap install, check gate, section
+    prose). Every merge runs in TOOL_FRAGMENT_ORDER.
     """
     warnings: list[str] = []
     destination.mkdir(parents=True, exist_ok=True)
     root = repo_root()
     fragments = root / "fragments"
 
-    mise_fragment = fragments / "mise-layer.toml"
+    _merge_mise(destination, fragments / "mise-layer.toml", warnings)
+
+    for tool in TOOL_FRAGMENT_ORDER:
+        tool_dir = fragments / "tools" / tool
+        if not tool_dir.is_dir():
+            raise FileNotFoundError(
+                f"declared fragment dir missing: {tool_dir}"
+            )
+
+        mise_fragment = tool_dir / "mise.toml"
+        if mise_fragment.exists():
+            _merge_mise(destination, mise_fragment, warnings)
+
+        prek_fragment = tool_dir / "prek.toml"
+        if prek_fragment.exists():
+            _, prek_warnings = merge_prek_config(
+                destination, load_toml(prek_fragment)["repos"]
+            )
+            warnings.extend(prek_warnings)
+
+        gitignore_fragment = tool_dir / "gitignore.txt"
+        if gitignore_fragment.exists():
+            append_gitignore_lines(
+                destination / ".gitignore",
+                gitignore_fragment.read_text(encoding="utf-8").splitlines(),
+            )
+
+        wt_fragment = tool_dir / "wt.toml"
+        if wt_fragment.exists():
+            wt_target = destination / ".config" / "wt.toml"
+            if wt_target.exists():
+                warnings.extend(
+                    merge_toml_file(wt_target, load_toml(wt_fragment))
+                )
+            else:
+                wt_target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(wt_fragment, wt_target)
+
+    upsert_marked_section(
+        destination / "AGENTS.md", _compose_agents_md_section(fragments)
+    )
+    return warnings
+
+
+def _merge_mise(destination: Path, fragment: Path, warnings: list[str]) -> None:
     mise_target = destination / "mise.toml"
     if mise_target.exists():
-        warnings.extend(
-            merge_mise_fragment(mise_target, load_toml(mise_fragment))
-        )
+        warnings.extend(merge_mise_fragment(mise_target, load_toml(fragment)))
     else:
-        shutil.copy2(mise_fragment, mise_target)
+        shutil.copy2(fragment, mise_target)
 
-    prek_entries = load_toml(fragments / "prek-layer.toml")["repos"]
-    _, prek_warnings = merge_prek_config(destination, prek_entries)
-    warnings.extend(prek_warnings)
 
-    append_gitignore_lines(
-        destination / ".gitignore",
-        (fragments / "gitignore-layer.txt")
+def _compose_agents_md_section(fragments: Path) -> str:
+    """The managed AGENTS.md section: layer prose first, then each tool's
+    lines in TOOL_FRAGMENT_ORDER (apt-22: declared, not directory-sorted)."""
+    parts = [
+        (fragments / "agents-md-section.md")
         .read_text(encoding="utf-8")
-        .splitlines(),
-    )
-
-    wt_fragment = fragments / "wt-layer.toml"
-    wt_target = destination / ".config" / "wt.toml"
-    if wt_target.exists():
-        warnings.extend(merge_toml_file(wt_target, load_toml(wt_fragment)))
-    else:
-        wt_target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(wt_fragment, wt_target)
-
-    section = (fragments / "agents-md-section.md").read_text(encoding="utf-8")
-    upsert_marked_section(destination / "AGENTS.md", section)
-    return warnings
+        .rstrip("\n")
+    ]
+    for tool in TOOL_FRAGMENT_ORDER:
+        agents_fragment = fragments / "tools" / tool / "agents.md"
+        if agents_fragment.exists():
+            parts.append(agents_fragment.read_text(encoding="utf-8").rstrip("\n"))
+    return "\n\n".join(parts) + "\n"
 
 
 def apply_layer(tmp: Path, destination: Path) -> list[str]:

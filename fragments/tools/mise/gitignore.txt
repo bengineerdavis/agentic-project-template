@@ -1,0 +1,3 @@
+# mise layer fragment — local overrides are never committed (the layer
+# stamps projects that treat mise.local.toml as machine state).
+mise.local.toml
