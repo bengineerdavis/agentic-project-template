@@ -450,7 +450,7 @@ Decisions confirmed with the maintainer, 2026-10-11:
 | Slow loop | Scheduled non-interactive opencode deep review writing `docs/reviews/` |
 | Agent surface | opencode-first, wired through dotagents targets |
 | dotagents scope | Project-scope `agents.toml`, skills + subagents pinned to refs; MCP via stamp question plus `add-mcp` skill |
-| v1 scope | Loop-complete: harness + fast loop + one slow loop + dotagents + alint; consult-llm and git-ai opt-in, default off |
+| v1 scope | Loop-complete: harness + fast loop + one slow loop + dotagents + alint; consult-llm and git-ai opt-in, default off; backlog (L5) stamps by default and opts out via `include_backlog: false` |
 | alint | `.alint.yml` with agent-hygiene, agent-context, oss-baseline + gated ecosystem rulesets; prek hook; AGENTS.md kept in step |
 | consult-llm | raine/consult-llm; opencode backend; user config in chezmoi, project config stamped only when opted in |
 | User/project boundary | Personal tools and user config to chezmoi and dotagents global; shared project-agnostic logic also hoisted to chezmoi |

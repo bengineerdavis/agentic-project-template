@@ -17,8 +17,8 @@ Use before claiming work done, and whenever returning to a branch.
 3. Fix verified findings now, while the context that created them is fresh;
    that freshness is the entire point of the fast loop.
 4. Re-run status until open findings for the branch are resolved or
-   explicitly deferred as backlog tasks (`backlog-py task create`), one
-   task each.
+   {% if include_backlog %}explicitly deferred as backlog tasks (`backlog-py task create`), one
+   task each.{% else %}explicitly deferred with a recorded reason.{% endif %}
 
 ## Rules
 

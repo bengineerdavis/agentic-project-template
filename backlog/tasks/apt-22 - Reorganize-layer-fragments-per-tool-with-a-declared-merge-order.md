@@ -1,8 +1,9 @@
 ---
 id: APT-22
 title: Reorganize layer fragments per tool with a declared merge order
-status: To Do
+status: In Progress
 created_date: 2026-10-18 23:13
+updated_date: 2026-10-27 21:15
 ---
 
 ## Description
@@ -35,9 +36,8 @@ Confirmed with the maintainer 2026-10-18: per-tool layering plus a declared orde
 ## Implementation Notes
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
-
+Taken 2026-10-27: worktree apt-22-per-tool-fragments.
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
-
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
