@@ -3,7 +3,7 @@ id: APT-22
 title: Reorganize layer fragments per tool with a declared merge order
 status: In Progress
 created_date: 2026-10-18 23:13
-updated_date: 2026-10-27 21:15
+updated_date: 2026-11-02 22:40
 ---
 
 ## Description
@@ -25,10 +25,10 @@ Confirmed with the maintainer 2026-10-18: per-tool layering plus a declared orde
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 fragments/tools/<tool>/ exists for each stamped tool; no tool contribution remains in a cross-tool grab-bag fragment
-- [ ] #2 The CLI merge applies per-tool fragments in one declared, tested order (a test asserts merged prek repos and AGENTS.md section order)
-- [ ] #3 The order is declared in one place (single source), not sorted-directory inference
-- [ ] #4 Stamp matrix green: layer-only, with-base, existing-project merge, update path
+- [x] #1 fragments/tools/<tool>/ exists for each stamped tool; no tool contribution remains in a cross-tool grab-bag fragment
+- [x] #2 The CLI merge applies per-tool fragments in one declared, tested order (a test asserts merged prek repos and AGENTS.md section order)
+- [x] #3 The order is declared in one place (single source), not sorted-directory inference
+- [x] #4 Stamp matrix green: layer-only, with-base, existing-project merge, update path
 - [ ] #5 tombi lint and mise parse the merged mise.toml/prek.toml on a stamped project (redge)
 - [ ] #6 agentic-project-template update on redge lands the reorganization without clobbering local state
 <!-- AC:END -->
@@ -37,6 +37,7 @@ Confirmed with the maintainer 2026-10-18: per-tool layering plus a declared orde
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
 Taken 2026-10-27: worktree apt-22-per-tool-fragments.
+Merged apt-24 backlog workflow into the reorg 2026-11-02 (4aa50b3): TOOL_FRAGMENT_ORDER + include_backlog gating coexist; 46 tests, lint, stamp matrix green (AC #4 update path OK). Fast-forwarded main.
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
 ## Final Summary
 
