@@ -1,9 +1,9 @@
 ---
 id: APT-22
 title: Reorganize layer fragments per tool with a declared merge order
-status: In Progress
+status: Done
 created_date: 2026-10-18 23:13
-updated_date: 2026-11-02 22:40
+updated_date: 2026-11-04 16:39
 ---
 
 ## Description
@@ -29,8 +29,8 @@ Confirmed with the maintainer 2026-10-18: per-tool layering plus a declared orde
 - [x] #2 The CLI merge applies per-tool fragments in one declared, tested order (a test asserts merged prek repos and AGENTS.md section order)
 - [x] #3 The order is declared in one place (single source), not sorted-directory inference
 - [x] #4 Stamp matrix green: layer-only, with-base, existing-project merge, update path
-- [ ] #5 tombi lint and mise parse the merged mise.toml/prek.toml on a stamped project (redge)
-- [ ] #6 agentic-project-template update on redge lands the reorganization without clobbering local state
+- [x] #5 tombi lint and mise parse the merged mise.toml/prek.toml on a stamped project (redge)
+- [x] #6 agentic-project-template update on redge lands the reorganization without clobbering local state
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -42,7 +42,7 @@ Merged apt-24 backlog workflow into the reorg 2026-11-02 (4aa50b3): TOOL_FRAGMEN
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-
+Closed 2026-11-04. Fragments reorganized per tool under fragments/tools/<tool>/ in a declared order (TOOL_FRAGMENT_ORDER in stamp.py — single source, tested); merge engine keeps one deep_merge primitive + thin wrappers, with merge_mise_fragment carrying two provenance migrations (legacy bare opencode pin removal; layer-authored install.run exact-match replacement via _LAYER_AUTHORED_SCRIPTS, derived verbatim from git history and guarded by a tripwire test — hardened against shallow-clone vacuity per review 265). Stamp matrix green (layer-only, with-base, existing merge, update-with-choices-preserved). Redge verification: tombi lint passes, mise parses the merged config, alint gate green; the update landed both migrations with warnings (commits fc2c5e4/17bd645). All fast-loop findings resolved: 258+259 (LSP doc drift, 1ec7def), 261 (tripwire), 263 (comment leak 0ecccee, roborev warning 02a0191), 265/266 (edc86a7). Follow-ups: APT-26 (stamp roborev wiring smoke), APT-27 (re-validate lsp stanza when V2 restores LSP).
 <!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
