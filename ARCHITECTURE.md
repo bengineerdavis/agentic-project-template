@@ -85,7 +85,10 @@ One concern: how agents learn to work here and who does what.
 
 - Owned by: `AGENTS.md` (router section, merged), `.context/` two-tier
   knowledge (Tier 1 injected, Tier 2 lazy `@docs/` references), `.opencode/`
-  agent definitions, dotagents subagents.
+  agent definitions, dotagents subagents, and the lore tier: a seeded
+  `.lore.md` (machine-curated long-term knowledge, `include_lore`, opt-out;
+  lore owns the file and its AGENTS.md section — the layer only seeds and
+  points at it).
 - Stamped: always.
 - consult-llm (second opinions, `/consult`, `/debate`) lives here, opt-in.
 - Agent-facing LSP wiring (apt-9, done in apt-10 for opencode): the `lsp`

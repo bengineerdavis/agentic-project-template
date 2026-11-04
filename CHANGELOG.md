@@ -5,6 +5,11 @@ reconstructed from `git log`.
 
 ## Unreleased
 
+- Added: lore onboarding (apt-28). `include_lore` (default on) seeds
+  `.lore.md` with lore's managed header and points agents at it from
+  `.context/ai-rules.md` as read-only, machine-managed context. The
+  AGENTS.md lore section is lore's own and is not stamped. Turning the
+  flag off on update removes the pointer and leaves `.lore.md` in place.
 - Added: backlog/workflow adapter for the Matt Pocock engineering skills.
   Stamped projects get `docs/agents/issue-tracker.md`, `triage-labels.md` and
   `domain.md`, a `backlog-workflow` skill that detects `backlog/` and maps
