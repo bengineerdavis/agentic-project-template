@@ -136,18 +136,8 @@ TOOL_FRAGMENT_ORDER = (
 
 
 def _include_backlog(destination: Path) -> bool:
-    """Backlog stays stamped unless the project's answers opt out.
-
-    A missing key (stamps that predate the question) means True: the update
-    path must not strip wiring the project never chose to remove.
-    """
-    answers_file = destination / ".agentic-answers.yml"
-    if not answers_file.exists():
-        return True
-    answers = load_yaml(answers_file)
-    if not isinstance(answers, dict):
-        return True
-    return bool(answers.get("include_backlog", True))
+    """Backlog stays stamped unless the project's answers opt out."""
+    return _include_flag(destination, "include_backlog")
 
 
 def _strip_backlog_wiring(mise_text: str) -> str:
@@ -227,6 +217,9 @@ def apply_fragments(destination: Path) -> list[str]:
     fragments = root / "fragments"
 
     backlog_on = _include_backlog(destination)
+    lore_on = _include_flag(destination, "include_lore")
+    if not lore_on:
+        _strip_lore_pointer(destination, warnings)
     _merge_mise(destination, fragments / "mise-layer.toml", warnings, backlog_on)
 
     for tool in TOOL_FRAGMENT_ORDER:
@@ -276,6 +269,54 @@ def apply_fragments(destination: Path) -> list[str]:
             _remove_gated_files(destination, CONDITIONAL_PATHS["include_backlog"])
         )
     return warnings
+
+
+LORE_POINTER = "Long-term knowledge lives in `.lore.md`"
+
+
+def _include_flag(destination: Path, flag: str, default: bool = True) -> bool:
+    """Read one boolean layer answer; missing key means the default.
+
+    Stamps that predate a question never opted out, so the update path
+    must not strip wiring the project never chose to remove.
+    """
+    answers_file = destination / ".agentic-answers.yml"
+    if not answers_file.exists():
+        return default
+    answers = load_yaml(answers_file)
+    if not isinstance(answers, dict):
+        return default
+    return bool(answers.get(flag, default))
+
+
+def _strip_lore_pointer(destination: Path, warnings: list[str]) -> None:
+    """Remove the ai-rules lore pointer (include_lore turned off).
+
+    .lore.md itself is project data and is never touched here. Text-level
+    on the rendered file because the pointer rides a gated jinja block,
+    not a mergeable section.
+    """
+    ai_rules = destination / ".context" / "ai-rules.md"
+    if not ai_rules.exists():
+        return
+    text = ai_rules.read_text(encoding="utf-8")
+    if LORE_POINTER not in text:
+        return
+    lines = text.splitlines(keepends=True)
+    kept: list[str] = []
+    skipping = False
+    for line in lines:
+        if LORE_POINTER in line:
+            skipping = True
+            warnings.append("removed lore pointer from .context/ai-rules.md")
+            continue
+        if skipping:
+            # continuation lines: indented, until a bullet ("- ") or blank
+            if line.startswith("  ") and line.strip():
+                continue
+            skipping = False
+        kept.append(line)
+    ai_rules.write_text("".join(kept), encoding="utf-8")
 
 
 def _merge_mise(

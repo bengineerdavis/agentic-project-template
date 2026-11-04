@@ -441,8 +441,10 @@ def test_lore_opt_out_leaves_no_trace(tmp_path: Path) -> None:
 
 def test_lore_opt_out_update_leaves_seeded_file(tmp_path: Path) -> None:
     """A project stamped with lore, then updated with the flag off:
-    .lore.md is accumulated project knowledge, not wiring — it stays.
-    Only the ai-rules pointer goes (the re-rendered managed file).
+    .lore.md is accumulated project knowledge, not wiring — it stays
+    (copier's update never re-renders on answer changes; probe-verified).
+    The ai-rules pointer IS wiring: apply_fragments strips it, like the
+    backlog wiring strip.
     """
     dst = tmp_path / "toggled-off"
     dst.mkdir()
@@ -451,6 +453,7 @@ def test_lore_opt_out_update_leaves_seeded_file(tmp_path: Path) -> None:
     (dst / ".agentic-answers.yml").write_text("include_lore: false\n")
     apply_fragments(dst)
     assert (dst / ".lore.md").read_text(encoding="utf-8") == seed_text
+    assert ".lore.md" not in (dst / ".context" / "ai-rules.md").read_text()
 
 
 def test_opt_in_flags_render(tmp_path: Path) -> None:
