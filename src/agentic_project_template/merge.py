@@ -92,15 +92,24 @@ def merge_toml_file(destination: Path, overlay_doc: dict) -> list[str]:
 def merge_mise_fragment(destination: Path, overlay_doc: dict) -> list[str]:
     """Merge the layer's mise fragment into the project's mise.toml.
 
-    One migration beyond the plain deep-merge: when the layer's pin for a
-    tool moves to a backend-prefixed key, a project stamped before the move
-    still carries the layer's old bare key — deep_merge never removes keys,
-    so both would survive. mise treats them as separate backend instances
-    of the same tool and shim dispatch resolves the first provider, so the
-    stale pin keeps winning (opencode 1.18.32 beside http:opencode 2.0.32
-    resolves 1.18.32; verified 2026-10-20). The bare key was written by an
-    earlier layer stamp, not chosen by the project, so removing it
-    migrates layer-owned state rather than overwriting a project choice.
+    Two migrations beyond the plain deep-merge, both for layer-owned state
+    a pre-bump stamp carries and deep_merge (base wins, never removes)
+    would otherwise keep forever:
+
+    1. When the layer's pin for a tool moves to a backend-prefixed key, the
+       project still carries the layer's old bare key. mise treats them as
+       separate backend instances of the same tool and shim dispatch
+       resolves the first provider, so the stale pin keeps winning
+       (opencode 1.18.32 beside http:opencode 2.0.32 resolves 1.18.32;
+       verified 2026-10-20). The bare key was written by an earlier layer
+       stamp, not chosen by the project, so removing it migrates
+       layer-owned state rather than overwriting a project choice.
+
+    2. When the layer rewrites a task's script (tasks.install.run), the
+       project keeps the earlier layer-authored script verbatim. Scripts
+       the layer itself wrote across its history are recognized by exact
+       match (hash) and replaced with the current one; anything else is
+       hand-tuned project content and wins, as deep_merge dictates.
     """
     base = load_toml(destination) if destination.exists() else {}
     warnings: list[str] = []
@@ -118,9 +127,156 @@ def merge_mise_fragment(destination: Path, overlay_doc: dict) -> list[str]:
             "opencode as http:opencode; coexisting keys make mise resolve "
             "the stale registry binary first"
         )
+    tasks = base.get("tasks")
+    overlay_tasks = overlay_doc.get("tasks")
+    if isinstance(tasks, dict) and isinstance(overlay_tasks, dict):
+        for task_name, incoming in overlay_tasks.items():
+            if not isinstance(incoming, dict):
+                continue
+            incoming_run = incoming.get("run")
+            if not isinstance(incoming_run, str):
+                continue
+            existing = tasks.get(task_name)
+            if not isinstance(existing, dict):
+                continue
+            existing_run = existing.get("run")
+            if not isinstance(existing_run, str) or existing_run == incoming_run:
+                continue
+            if existing_run not in _LAYER_AUTHORED_SCRIPTS:
+                continue
+            existing["run"] = incoming_run
+            warnings.append(
+                f"replaced layer-authored {task_name}.run with the current "
+                "layer version (exact match against an earlier layer stamp); "
+                "a hand-tuned script would have been kept"
+            )
     merged, merge_warnings = deep_merge(base, overlay_doc)
     dump_toml(merged, destination)
     return warnings + merge_warnings
+
+
+# Scripts the layer shipped in fragments across its history (hashes over the
+# exact `run` strings; provenance in git history of fragments/mise-layer.toml
+# and fragments/tools/*/mise.toml). An exact match identifies layer-authored
+# content — the same provenance argument as the legacy registry-pin removal.
+_LAYER_AUTHORED_SCRIPTS: frozenset[str] = frozenset(
+    {
+        # 57dd742/23f8862 (original stamp, no TMPDIR preflight)
+        (
+            "#!/usr/bin/env bash\nset -euo pipefail\n"
+            "mise install prek tombi opencode\n"
+            'mise install "npm:@sentry/dotagents"\n'
+            "dotagents --project install\n"
+            "prek install --force\n"
+            'if ! mise install "github:kenn-io/roborev"; then\n'
+            '  echo "warn: roborev install failed (backend unverified)" >&2\n'
+            "fi\n"
+            "if ! roborev init; then\n"
+            '  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\n'
+            "fi\n"
+            "mise run backlog-init\n"
+        ),
+        # a454d02 (aube lock-dir preflight added)
+        (
+            "#!/usr/bin/env bash\nset -euo pipefail\n"
+            ': "${TMPDIR:=/tmp}"\n'
+            'if [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n'
+            '  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n'
+            '  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n'
+            "  exit 1\n"
+            "fi\n"
+            "mise install prek tombi opencode\n"
+            'mise install "npm:@sentry/dotagents"\n'
+            "dotagents --project install\n"
+            "prek install --force\n"
+            'if ! mise install "github:kenn-io/roborev"; then\n'
+            '  echo "warn: roborev install failed (backend unverified)" >&2\n'
+            "fi\n"
+            "if ! roborev init; then\n"
+            '  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\n'
+            "fi\n"
+            "mise run backlog-init\n"
+        ),
+        # 93f10df (task-id prefix question)
+        (
+            "#!/usr/bin/env bash\nset -euo pipefail\n"
+            ': "${TMPDIR:=/tmp}"\n'
+            'if [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n'
+            '  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n'
+            '  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n'
+            "  exit 1\n"
+            "fi\n"
+            "mise install prek tombi opencode\n"
+            'mise install "npm:@sentry/dotagents"\n'
+            "dotagents --project install\n"
+            "prek install --force\n"
+            'if ! mise install "github:kenn-io/roborev"; then\n'
+            '  echo "warn: roborev install failed (backend unverified)" >&2\n'
+            "fi\n"
+            "if ! roborev init; then\n"
+            '  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\n'
+            "fi\n"
+            "mise run backlog-init\n"
+        ),
+        # 4a3e0ea (real tool backends)
+        (
+            "#!/usr/bin/env bash\nset -euo pipefail\n"
+            ': "${TMPDIR:=/tmp}"\n'
+            'if [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n'
+            '  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n'
+            '  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n'
+            "  exit 1\n"
+            "fi\n"
+            'mise install prek tombi opencode "github:asamarts/alint"\n'
+            'mise install "npm:@sentry/dotagents"\n'
+            "dotagents --project install\n"
+            "prek install --force\n"
+            'if ! mise install "github:kenn-io/roborev"; then\n'
+            '  echo "warn: roborev install failed (github:kenn-io/roborev — continuing without it)" >&2\n'
+            "fi\n"
+            "if ! roborev init; then\n"
+            '  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\n'
+            "fi\n"
+            "mise run backlog-init\n"
+        ),
+        # 93bdec6 (alint in the stamped bootstrap, pre-preflight ordering)
+        (
+            "#!/usr/bin/env bash\nset -euo pipefail\n"
+            'mise install prek tombi opencode "github:asamarts/alint"\n'
+            'mise install "npm:@sentry/dotagents"\n'
+            "dotagents --project install\n"
+            "prek install --force\n"
+            'if ! mise install "github:kenn-io/roborev"; then\n'
+            '  echo "warn: roborev install failed (backend unverified)" >&2\n'
+            "fi\n"
+            "if ! roborev init; then\n"
+            '  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\n'
+            "fi\n"
+            "mise run backlog-init\n"
+        ),
+        # 7e07e72/1929fe3 (http-backend opencode pin)
+        (
+            "#!/usr/bin/env bash\nset -euo pipefail\n"
+            ': "${TMPDIR:=/tmp}"\n'
+            'if [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n'
+            '  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n'
+            '  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n'
+            "  exit 1\n"
+            "fi\n"
+            'mise install prek tombi "http:opencode" "github:asamarts/alint"\n'
+            'mise install "npm:@sentry/dotagents"\n'
+            "dotagents --project install\n"
+            "prek install --force\n"
+            'if ! mise install "github:kenn-io/roborev"; then\n'
+            '  echo "warn: roborev install failed (github:kenn-io/roborev — continuing without it)" >&2\n'
+            "fi\n"
+            "if ! roborev init; then\n"
+            '  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\n'
+            "fi\n"
+            "mise run backlog-init\n"
+        ),
+    }
+)
 
 
 def _repo_signature(entry: dict) -> tuple:

@@ -83,6 +83,69 @@ def test_merge_mise_fragment_keeps_bare_key_without_backend_move(tmp_path) -> No
     assert not warnings
 
 
+def test_merge_mise_fragment_migrates_stale_layer_install_script(tmp_path) -> None:
+    """A pre-bump stamp keeps the layer's earlier install.run verbatim
+    (base wins on the tasks.install.run conflict, warning only). The old
+    script installs `opencode` as a bare registry pin — the V1 line apt-21
+    blocked — and misses tools the current layer installs. Like the
+    registry-pin migration, the script was authored by an earlier layer
+    stamp, not chosen by the project: an exact match against a known
+    layer-authored variant migrates to the current fragment's script;
+    anything else stays untouched (base wins for hand-tuned content).
+    """
+    legacy_script = (
+        '#!/usr/bin/env bash\nset -euo pipefail\n'
+        ': "${TMPDIR:=/tmp}"\n'
+        'if [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n'
+        '  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n'
+        '  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n'
+        '  exit 1\n'
+        'fi\n'
+        'mise install prek tombi opencode\n'
+        'mise install "npm:@sentry/dotagents"\n'
+        'dotagents --project install\n'
+        'prek install --force\n'
+        'if ! mise install "github:kenn-io/roborev"; then\n'
+        '  echo "warn: roborev install failed (backend unverified)" >&2\n'
+        'fi\n'
+        'if ! roborev init; then\n'
+        '  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\n'
+        'fi\n'
+        'mise run backlog-init\n'
+    )
+    current_script = (
+        '#!/usr/bin/env bash\nset -euo pipefail\n'
+        'mise install prek tombi "http:opencode" "github:asamarts/alint"\n'
+    )
+    target = tmp_path / "mise.toml"
+    target.write_text(
+        f'[tasks.install]\nrun = {tomli_w_dumps(legacy_script)}\n'
+    )
+    overlay = {"tasks": {"install": {"run": current_script}}}
+    warnings = merge_mise_fragment(target, overlay)
+    merged = load_toml(target)
+    assert merged["tasks"]["install"]["run"] == current_script
+    assert any("install" in w for w in warnings)
+
+    # hand-tuned variant: never touched
+    target.write_text(
+        f'[tasks.install]\nrun = {tomli_w_dumps("make install")}\n'
+    )
+    warnings = merge_mise_fragment(target, overlay)
+    assert load_toml(target)["tasks"]["install"]["run"] == "make install"
+    assert not [w for w in warnings if "replaced layer-authored" in w]
+
+    # already-current script: no warning, no churn (idempotent)
+    target.write_text(f'[tasks.install]\nrun = {tomli_w_dumps(current_script)}\n')
+    assert not merge_mise_fragment(target, overlay)
+
+
+def tomli_w_dumps(value: str) -> str:
+    import tomli_w
+
+    return tomli_w.dumps({"v": value})[len("v = ") :].strip()
+
+
 def test_deep_merge_allows_toml_types() -> None:
     merged, _ = deep_merge({"a": 1}, {"b": [1, 2], "c": {"d": True}})
     assert merged["a"] == 1 and merged["b"] == [1, 2] and merged["c"]["d"] is True
