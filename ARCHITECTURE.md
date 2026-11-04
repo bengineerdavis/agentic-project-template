@@ -91,10 +91,16 @@ One concern: how agents learn to work here and who does what.
 - Agent-facing LSP wiring (apt-9, done in apt-10 for opencode): the `lsp`
   section in the stamped `opencode.json` merges through `RENDERED_SHARED`
   like the rest of that file — per-agent concerns are additive, never
-  clobbering. opencode's stanza runs `alint lsp` over .md/.toml/.yaml files
-  and pyright over .py (both mise-pinned binaries on PATH). Language-server
-  *pins* stay in L0 fragments; this layer only decides what each agent is
-  told to consume. Later agents (claude, codex, cursor) get their own wiring
+  clobbering. The stanza wires `alint lsp` over
+  .md/.markdown/.yaml/.yml/.py/.toml/.json (extensions are the server's
+  claim, not per-language splits); pyright is NOT in the stanza — opencode
+  V2 runs its builtin pyright server whenever the mise-pinned `pyright`
+  binary is on PATH (see fragments/tools/pyright/mise.toml). Today V2
+  parses the stanza but runs no LSP servers, so the accepted diagnostic
+  path is the mise-pinned CLIs directly; the stanza is forward wiring —
+  re-validate when V2 restores the LSP runtime. Language-server *pins*
+  stay in L0 fragments; this layer only decides what each agent is told
+  to consume. Later agents (claude, codex, cursor) get their own wiring
   note here rather than a shared abstraction (apt-11): the LSP contract is
   "a mise-pinned binary on PATH plus a per-agent config stanza", which is
   too thin to abstract usefully.

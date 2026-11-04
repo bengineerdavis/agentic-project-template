@@ -210,8 +210,14 @@ abstract).
 
 - **WHEN** a stamped project carries a deliberate type error and an alint
   rule violation and an agent session opens those files
-- **THEN** the agent's LSP client surfaces both as diagnostics from the
-  mise-pinned servers, without the agent installing anything at runtime.
+- **THEN** the agent session surfaces both as diagnostics from the
+  mise-pinned servers, without the agent installing anything at runtime —
+  either through the agent's LSP wiring or by the agent running the
+  mise-pinned CLIs directly (accepted substitute, recorded 2026-11-04:
+  opencode V2 parses the `lsp` stanza but runs no LSP servers; pyright runs
+  as a builtin server and `alint check` is invoked directly. The stanza
+  stays as forward wiring for opencode builds that run LSP — re-validate it
+  when V2 restores the LSP runtime, tracked in the apt-10 follow-up).
 
 ### Behavior: Dependencies — every referenced skill is declared
 
