@@ -409,6 +409,50 @@ def test_backlog_opt_out_update_removes_stale_wiring(tmp_path: Path) -> None:
     assert "backlog" not in (dst / "AGENTS.md").read_text().lower()
 
 
+LORE_HEADER = (
+    "<!-- Managed by lore (https://github.com/BYK/loreai) "
+    "— manual edits are imported on next session. -->"
+)
+
+
+def test_lore_on_stamps_seed_and_pointer(fresh_stamp: Path) -> None:
+    """include_lore (default on) seeds .lore.md with lore's own managed
+    header — nothing else — and points agents at it from ai-rules.
+    Lore imports and merges into the file; the layer never curates it.
+    """
+    seed = fresh_stamp / ".lore.md"
+    assert seed.read_text(encoding="utf-8") == LORE_HEADER + "\n"
+    ai_rules = (fresh_stamp / ".context" / "ai-rules.md").read_text()
+    assert ".lore.md" in ai_rules
+
+
+def test_lore_opt_out_leaves_no_trace(tmp_path: Path) -> None:
+    """include_lore=false must stamp a project with no lore trace:
+    no seed file, no ai-rules mention (the answers file itself is the
+    one legitimate carrier of the flag). Artifact-level, not substring:
+    "lore" false-positives on "explore".
+    """
+    dst = tmp_path / "quiet-project"
+    dst.mkdir()
+    _stamp(dst, include_lore=False)
+    assert not (dst / ".lore.md").exists()
+    assert ".lore.md" not in (dst / ".context" / "ai-rules.md").read_text()
+
+
+def test_lore_opt_out_update_leaves_seeded_file(tmp_path: Path) -> None:
+    """A project stamped with lore, then updated with the flag off:
+    .lore.md is accumulated project knowledge, not wiring — it stays.
+    Only the ai-rules pointer goes (the re-rendered managed file).
+    """
+    dst = tmp_path / "toggled-off"
+    dst.mkdir()
+    _stamp(dst)
+    seed_text = (dst / ".lore.md").read_text(encoding="utf-8")
+    (dst / ".agentic-answers.yml").write_text("include_lore: false\n")
+    apply_fragments(dst)
+    assert (dst / ".lore.md").read_text(encoding="utf-8") == seed_text
+
+
 def test_opt_in_flags_render(tmp_path: Path) -> None:
     dst = tmp_path / "opted"
     dst.mkdir()

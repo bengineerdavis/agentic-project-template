@@ -37,6 +37,8 @@ Language and build concerns live in the base project; do not confuse the two.
 - `.alint.yml` enforces repository shape; its `agent` output carries fix
   instructions — run what it says. `AGENTS.md` here is kept in step with the
   enforced rules; do not edit the managed section by hand.
+{% if include_lore %}- Long-term knowledge lives in `.lore.md`, curated by lore; treat it as
+  read-only context (it is machine-managed).{% endif %}
 
 ## Commands
 
