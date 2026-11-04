@@ -161,120 +161,24 @@ def merge_mise_fragment(destination: Path, overlay_doc: dict) -> list[str]:
 # content — the same provenance argument as the legacy registry-pin removal.
 _LAYER_AUTHORED_SCRIPTS: frozenset[str] = frozenset(
     {
-        # 57dd742/23f8862 (original stamp, no TMPDIR preflight)
-        (
-            "#!/usr/bin/env bash\nset -euo pipefail\n"
-            "mise install prek tombi opencode\n"
-            'mise install "npm:@sentry/dotagents"\n'
-            "dotagents --project install\n"
-            "prek install --force\n"
-            'if ! mise install "github:kenn-io/roborev"; then\n'
-            '  echo "warn: roborev install failed (backend unverified)" >&2\n'
-            "fi\n"
-            "if ! roborev init; then\n"
-            '  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\n'
-            "fi\n"
-            "mise run backlog-init\n"
-        ),
-        # a454d02 (aube lock-dir preflight added)
-        (
-            "#!/usr/bin/env bash\nset -euo pipefail\n"
-            ': "${TMPDIR:=/tmp}"\n'
-            'if [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n'
-            '  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n'
-            '  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n'
-            "  exit 1\n"
-            "fi\n"
-            "mise install prek tombi opencode\n"
-            'mise install "npm:@sentry/dotagents"\n'
-            "dotagents --project install\n"
-            "prek install --force\n"
-            'if ! mise install "github:kenn-io/roborev"; then\n'
-            '  echo "warn: roborev install failed (backend unverified)" >&2\n'
-            "fi\n"
-            "if ! roborev init; then\n"
-            '  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\n'
-            "fi\n"
-            "mise run backlog-init\n"
-        ),
-        # 93f10df (task-id prefix question)
-        (
-            "#!/usr/bin/env bash\nset -euo pipefail\n"
-            ': "${TMPDIR:=/tmp}"\n'
-            'if [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n'
-            '  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n'
-            '  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n'
-            "  exit 1\n"
-            "fi\n"
-            "mise install prek tombi opencode\n"
-            'mise install "npm:@sentry/dotagents"\n'
-            "dotagents --project install\n"
-            "prek install --force\n"
-            'if ! mise install "github:kenn-io/roborev"; then\n'
-            '  echo "warn: roborev install failed (backend unverified)" >&2\n'
-            "fi\n"
-            "if ! roborev init; then\n"
-            '  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\n'
-            "fi\n"
-            "mise run backlog-init\n"
-        ),
-        # 4a3e0ea (real tool backends)
-        (
-            "#!/usr/bin/env bash\nset -euo pipefail\n"
-            ': "${TMPDIR:=/tmp}"\n'
-            'if [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n'
-            '  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n'
-            '  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n'
-            "  exit 1\n"
-            "fi\n"
-            'mise install prek tombi opencode "github:asamarts/alint"\n'
-            'mise install "npm:@sentry/dotagents"\n'
-            "dotagents --project install\n"
-            "prek install --force\n"
-            'if ! mise install "github:kenn-io/roborev"; then\n'
-            '  echo "warn: roborev install failed (github:kenn-io/roborev — continuing without it)" >&2\n'
-            "fi\n"
-            "if ! roborev init; then\n"
-            '  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\n'
-            "fi\n"
-            "mise run backlog-init\n"
-        ),
-        # 93bdec6 (alint in the stamped bootstrap, pre-preflight ordering)
-        (
-            "#!/usr/bin/env bash\nset -euo pipefail\n"
-            'mise install prek tombi opencode "github:asamarts/alint"\n'
-            'mise install "npm:@sentry/dotagents"\n'
-            "dotagents --project install\n"
-            "prek install --force\n"
-            'if ! mise install "github:kenn-io/roborev"; then\n'
-            '  echo "warn: roborev install failed (backend unverified)" >&2\n'
-            "fi\n"
-            "if ! roborev init; then\n"
-            '  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\n'
-            "fi\n"
-            "mise run backlog-init\n"
-        ),
-        # 7e07e72/1929fe3 (http-backend opencode pin)
-        (
-            "#!/usr/bin/env bash\nset -euo pipefail\n"
-            ': "${TMPDIR:=/tmp}"\n'
-            'if [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n'
-            '  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n'
-            '  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n'
-            "  exit 1\n"
-            "fi\n"
-            'mise install prek tombi "http:opencode" "github:asamarts/alint"\n'
-            'mise install "npm:@sentry/dotagents"\n'
-            "dotagents --project install\n"
-            "prek install --force\n"
-            'if ! mise install "github:kenn-io/roborev"; then\n'
-            '  echo "warn: roborev install failed (github:kenn-io/roborev — continuing without it)" >&2\n'
-            "fi\n"
-            "if ! roborev init; then\n"
-            '  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\n'
-            "fi\n"
-            "mise run backlog-init\n"
-        ),
+        # 4aa50b3 (Merge apt-24 backlog workflow into apt-22 per-tool fragments)
+        '#!/usr/bin/env bash\nset -euo pipefail\n: "${TMPDIR:=/tmp}"\nif [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n  exit 1\nfi\nmise install prek tombi "http:opencode" "github:asamarts/alint"\nmise install "npm:@sentry/dotagents"\ndotagents --project install\nprek install --force\nif ! mise install "github:kenn-io/roborev"; then\n  echo "warn: roborev install failed (github:kenn-io/roborev — continuing without it)" >&2\nfi\nif ! roborev init; then\n  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\nfi\nmise run backlog-init\n',
+
+        # 93bdec6 (fix: install alint in the stamped bootstrap)
+        '#!/usr/bin/env bash\nset -euo pipefail\n: "${TMPDIR:=/tmp}"\nif [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n  exit 1\nfi\nmise install prek tombi opencode "github:asamarts/alint"\nmise install "npm:@sentry/dotagents"\ndotagents --project install\nprek install --force\nif ! mise install "github:kenn-io/roborev"; then\n  echo "warn: roborev install failed (github:kenn-io/roborev — continuing without it)" >&2\nfi\nif ! roborev init; then\n  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\nfi\nmise run backlog-init\n',
+
+        # ffcb4d5 (fix: ignore dotagents artifacts in stamped projects)
+        '#!/usr/bin/env bash\nset -euo pipefail\n: "${TMPDIR:=/tmp}"\nif [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n  exit 1\nfi\nmise install prek tombi opencode\nmise install "npm:@sentry/dotagents"\ndotagents --project install\nprek install --force\nif ! mise install "github:kenn-io/roborev"; then\n  echo "warn: roborev install failed (backend unverified)" >&2\nfi\nif ! roborev init; then\n  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\nfi\nmise run backlog-init\n',
+
+        # 93f10df (fix: make the stamped task-id prefix a template question)
+        '#!/usr/bin/env bash\nset -euo pipefail\n: "${TMPDIR:=/tmp}"\nif [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n  exit 1\nfi\nmise install prek tombi opencode alint dotagents\ndotagents --project install\nprek install --force\nif ! mise install roborev; then\n  echo "warn: roborev install failed (backend unverified)" >&2\nfi\nif ! roborev init; then\n  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\nfi\nmise run backlog-init\n',
+
+        # a454d02 (Preflight the aube lock dir in install tasks (detection layer))
+        '#!/usr/bin/env bash\nset -euo pipefail\n: "${TMPDIR:=/tmp}"\nif [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n  exit 1\nfi\nmise install prek tombi opencode alint dotagents\ndotagents --project install\nprek install --force\nif ! mise install roborev; then\n  echo "warn: roborev install failed (backend unverified — backlog task apt-3)" >&2\nfi\nif ! roborev init; then\n  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\nfi\nmise run backlog-init\n',
+
+        # 23f8862 (Stamp worktrunk wiring into projects (apt-13))
+        '#!/usr/bin/env bash\nset -euo pipefail\nmise install prek tombi opencode alint dotagents\ndotagents --project install\nprek install --force\nif ! mise install roborev; then\n  echo "warn: roborev install failed (backend unverified — backlog task apt-3)" >&2\nfi\nif ! roborev init; then\n  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\nfi\nmise run backlog-init\n',
+
     }
 )
 

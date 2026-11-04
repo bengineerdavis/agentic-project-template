@@ -146,6 +146,94 @@ def tomli_w_dumps(value: str) -> str:
     return tomli_w.dumps({"v": value})[len("v = ") :].strip()
 
 
+def _fragment_task_scripts_at(sha: str, root: Path) -> dict[str, str]:
+    """Every tasks.<name>.run the layer's mise fragments carried at `sha`."""
+    import subprocess
+    import tomllib
+
+    listing = subprocess.run(
+        ["git", "ls-tree", "-r", "--name-only", sha, "fragments"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    scripts: dict[str, str] = {}
+    for path in listing.stdout.splitlines():
+        # mise-layer.toml (pre-reorg history) and tools/<tool>/mise.toml
+        # (post-reorg) both carry task scripts
+        if not path.endswith(("mise.toml", "mise-layer.toml")):
+            continue
+        blob = subprocess.run(
+            ["git", "show", f"{sha}:{path}"],
+            cwd=root,
+            capture_output=True,
+            check=True,
+        ).stdout
+        doc = tomllib.loads(blob.decode("utf-8"))
+        for name, task in doc.get("tasks", {}).items():
+            run = task.get("run") if isinstance(task, dict) else None
+            if isinstance(run, str):
+                scripts[name] = run
+    return scripts
+
+
+def test_layer_authored_script_table_covers_fragment_history() -> None:
+    """Tripwire for the exact-match script migration: when a fragment task
+    script changes, the outgoing layer-authored script must join
+    _LAYER_AUTHORED_SCRIPTS — otherwise stamped projects keep the stale
+    script forever (deep_merge base-wins). Walks the fragments' git history
+    and asserts every script the layer ever shipped is either still current
+    or registered in the migration table. Repo-only: needs git history.
+    """
+    import subprocess
+
+    import pytest
+
+    from agentic_project_template.merge import _LAYER_AUTHORED_SCRIPTS
+    from agentic_project_template.stamp import repo_root
+
+    root = repo_root()
+    try:
+        shas = subprocess.run(
+            ["git", "rev-list", "HEAD", "--", "fragments"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.split()
+    except (OSError, subprocess.CalledProcessError):
+        pytest.skip("git history unavailable (not a repo checkout)")
+
+    import tomllib
+
+    historical: set[str] = set()
+    for sha in shas:
+        historical.update(_fragment_task_scripts_at(sha, root).values())
+
+    current: set[str] = set()
+    fragments = root / "fragments"
+    for fragment in [fragments / "mise-layer.toml", *fragments.glob("tools/*/mise.toml")]:
+        doc = tomllib.loads(fragment.read_text(encoding="utf-8"))
+        for task in doc.get("tasks", {}).values():
+            run = task.get("run") if isinstance(task, dict) else None
+            if isinstance(run, str):
+                current.add(run)
+
+    # vacuity guard: the walker must have seen real history (the layer has
+    # shipped >= 7 distinct install scripts across its life)
+    assert len(historical) >= 7, f"history walk suspiciously small: {len(historical)}"
+
+    unknown = {
+        s for s in historical if s not in current and s not in _LAYER_AUTHORED_SCRIPTS
+    }
+    assert not unknown, (
+        "fragment task scripts changed without joining the migration table — "
+        "stamped projects would keep the stale script forever (base wins). "
+        f"Append these to _LAYER_AUTHORED_SCRIPTS: {sorted(unknown)!r}"
+    )
+
+
 def test_deep_merge_allows_toml_types() -> None:
     merged, _ = deep_merge({"a": 1}, {"b": [1, 2], "c": {"d": True}})
     assert merged["a"] == 1 and merged["b"] == [1, 2] and merged["c"]["d"] is True
