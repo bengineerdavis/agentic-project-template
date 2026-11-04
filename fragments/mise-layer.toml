@@ -25,11 +25,17 @@ mise install prek tombi "http:opencode" "github:asamarts/alint" "npm:pyright"
 mise install "npm:@sentry/dotagents"
 dotagents --project install
 prek install --force
+roborev_installed=1
 if ! mise install "github:kenn-io/roborev"; then
+  roborev_installed=0
   echo "warn: roborev install failed (github:kenn-io/roborev — continuing without it)" >&2
 fi
 if ! roborev init; then
-  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2
+  if [ "$roborev_installed" -eq 0 ]; then
+    echo "warn: roborev init failed (binary absent — install failed)" >&2
+  else
+    echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2
+  fi
 fi
 mise run backlog-init
 '''
