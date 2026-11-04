@@ -15,6 +15,10 @@ description:
   default: ""
 
 # L2 — agent orchestration
+include_lore:
+  type: bool
+  default: true
+  help: Seed .lore.md (lore-managed long-term knowledge; opt out for projects that keep memory out of the repo). Turning it off later never deletes an existing .lore.md
 include_consult_llm:
   type: bool
   default: false
