@@ -220,9 +220,16 @@ def test_layer_authored_script_table_covers_fragment_history() -> None:
             if isinstance(run, str):
                 current.add(run)
 
-    # vacuity guard: the walker must have seen real history (the layer has
-    # shipped >= 7 distinct install scripts across its life)
+    # vacuity guard: the walker must have seen real history — a shallow
+    # clone (fetch-depth 1) sees only HEAD's fragments, where the count of
+    # distinct scripts alone already exceeds 7. The tripwire's substance is
+    # the STALE set: history must contain at least one script that is no
+    # longer current (today: the six registered variants).
     assert len(historical) >= 7, f"history walk suspiciously small: {len(historical)}"
+    assert historical - current, (
+        "history walk saw no stale scripts — shallow checkout? The tripwire "
+        "is vacuous without pre-current history to check the table against."
+    )
 
     unknown = {
         s for s in historical if s not in current and s not in _LAYER_AUTHORED_SCRIPTS
