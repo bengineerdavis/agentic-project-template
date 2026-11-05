@@ -69,6 +69,12 @@ One concern: parallel agent work without stepping on each other's files.
 - Merge policy: `merge.squash = false` pinned in project config. A task's
   commit series survives the merge — one reviewable decision per commit is
   the house rule, and the fast loop reviewed each commit individually.
+- Branch synchronization (apt-32): the blocking `pre-switch` helper
+  fast-forwards clean `main` before a new worktree is created; dirty or
+  diverged `main` fails closed. The optional GitHub workflow uses the native
+  update-branch API after pushes and every 15 minutes. It merges only, never
+  executes PR code or force-pushes, and skips fork and stacked PRs. Other
+  forges need their own verified adapter; `redge` is not a dependency.
 - Branch naming: branches are worktree addresses; task branches are named
   from the backlog task id (`apt-N-slug`), so `wt switch apt-12-…` is the
   entire navigation model.
