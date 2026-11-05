@@ -335,6 +335,10 @@ def test_wt_config_stamped_fresh(fresh_stamp: Path) -> None:
     wt = (fresh_stamp / ".config" / "wt.toml").read_text()
     assert "mise trust && mise run install" in wt
     assert "mise run check" in wt
+    assert "sync-task-base.py" in wt
+    assert (fresh_stamp / "scripts" / "sync-task-base.py").exists()
+    assert (fresh_stamp / "docs" / "branch-sync.md").exists()
+    assert (fresh_stamp / ".github" / "workflows" / "branch-sync.yml").exists()
 
 
 def test_wt_config_merge_never_clobbers(tmp_path: Path) -> None:

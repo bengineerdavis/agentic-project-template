@@ -5,6 +5,12 @@ reconstructed from `git log`.
 
 ## Unreleased
 
+- Added: branch synchronization (apt-32). New worktrees fast-forward clean
+  `main` before creation. A push-triggered and 15-minute GitHub workflow
+  updates eligible same-repository PR branches with native clean merges,
+  expected-head protection, and a manual dry-run. Forks, stacked PRs, and
+  conflicts are reported without rewriting history; `redge` is not required.
+
 - Added: lore onboarding (apt-28). `include_lore` (default on) seeds
   `.lore.md` with lore's managed header and points agents at it from
   `.context/ai-rules.md` as read-only, machine-managed context. The

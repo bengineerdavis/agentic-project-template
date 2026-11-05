@@ -4,6 +4,11 @@
 
 # Bootstrap the worktree on first entry. Project hooks prompt for approval
 # on first run — that consent gate is deliberate and must not be bypassed.
+# A new default-based worktree starts from a fetched, fast-forwarded main.
+# Existing branches and explicitly stacked branches are not reset. The helper
+# fails closed on dirty or diverged main; first-run approval stays mandatory.
+pre-switch = "python3 scripts/sync-task-base.py --default-branch {{ default_branch }} --target {{ branch }}"
+
 post-start = "mise trust && mise run install"
 
 # Verify before merging: the project's own check command (alint + tombi).

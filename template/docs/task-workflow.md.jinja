@@ -14,7 +14,9 @@ clean. Worktrunk (`wt`) manages worktrees; the layer stamps
    `mise trust && mise run install`. Tool state is machine-shared, so the
    bootstrap is fast after the first time.
 3. Do the work only inside the worktree. The shared checkout is not for
-   task work.
+   task work. The pre-switch hook fast-forwards clean `main` before a new
+   branch is created; dirty or diverged `main` stops creation. Existing
+   worktrees are not reset. See `docs/branch-sync.md`.
 
 ## Finish a task
 

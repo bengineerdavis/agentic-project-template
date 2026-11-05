@@ -1,2 +1,3 @@
-- **Isolation:** one worktree per task — `wt switch <task-id-slug>` creates
-  it and bootstraps via the post-create hook; merge and clean up when done.
+- **Isolation:** one worktree per task — `wt switch --create <task-id-slug>`
+  fast-forwards clean `main` before creating it; existing worktrees and
+  explicitly stacked parents are preserved. See `docs/branch-sync.md`.

@@ -376,6 +376,25 @@ Worktree placement (the path template) SHALL remain user-level
 configuration and SHALL NOT be stamped. Project hooks run only after
 first-run approval; the layer SHALL NOT bypass the approval gate.
 
+New worktrees SHALL synchronize the default branch before the task branch is
+created. The pre-switch helper SHALL fast-forward a clean default checkout and
+SHALL refuse dirty or diverged state without discarding it. Existing branches
+and selected stacked parents SHALL NOT be reset.
+
+The optional GitHub adapter SHALL use the native clean-merge update operation
+with an expected head SHA, after pushes to the default branch and every 15
+minutes. It SHALL NOT execute PR code, rebase automatically, force-push, or
+merge a PR. Fork and stacked PRs SHALL be reported without an update. Other
+forges require separately verified adapters; no centralized coordinator is a
+runtime dependency.
+
+#### Scenario: The remote default branch advances before a task starts
+
+- **WHEN** a new worktree is created from a clean, behind local default branch
+- **THEN** the helper fast-forwards it before the new branch is created.
+- **WHEN** the local default branch is dirty or diverged
+- **THEN** creation stops without modifying the checkout or task history.
+
 #### Scenario: An agent edits the shared checkout
 
 - **WHEN** task work appears in the main checkout instead of a worktree
