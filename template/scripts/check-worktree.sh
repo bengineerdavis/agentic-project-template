@@ -11,14 +11,23 @@
 # and `--git-common-dir` name the same path; in a linked worktree the
 # git-dir is <common>/worktrees/<name>, so they differ.
 #
-# The guard binds ONLY agent sessions, identified by environment. The
-# maintainer commits to main from the main checkout legitimately, and the
-# task-store carve-out sends coordination writes to main — a blanket
-# check would block the person it is meant to protect. `--no-verify`
-# remains a deliberate, visible escape; this script does not try to
-# defeat it.
+# Response depends on who is asking, not on which agent is running:
 #
-# Exit codes: 0 permit, 1 block.
+#   subagent        -> block. A subagent is never the single writer.
+#   non-interactive -> block. A tool call cannot reach a terminal, so it
+#                      cannot be given an override by a human.
+#   interactive     -> warn loudly and offer a prompted override. The
+#                      maintainer keeps their escape hatch; it is typed,
+#                      not inherited.
+#
+# The maintainer commits to main from the main checkout legitimately, and
+# the task-store carve-out sends coordination writes to main. That is why
+# the interactive branch exists at all rather than a blanket block.
+#
+# `--no-verify` remains a deliberate, visible escape; this script does not
+# try to defeat it.
+#
+# Exit codes: 0 permit, 1 block, 3 block-and-remediated (see below).
 
 set -euo pipefail
 
@@ -32,6 +41,38 @@ is_agent_session() {
     fi
   done
   return 1
+}
+
+# A subagent carries a parent session id; a top-level session does not.
+#
+# Verified 2026-11-06 against opencode 2.2.5: GET /api/session/<id> omits
+# `parentID` entirely for a session the human started, and sets it to the
+# parent session id for a session spawned by a subagent call. Absence, not
+# null, is the top-level signal.
+#
+# When the API is unreachable we cannot prove top-level, so we treat the
+# session as a subagent. Failing closed here costs a retry; failing open
+# lets a subagent write from the main checkout, which is the bug.
+session_is_subagent() {
+  local sid="${OPENCODE_SESSION_ID:-}" doc
+  [ -n "$sid" ] || return 1
+
+  command -v opencode >/dev/null 2>&1 || return 0
+  doc="$(opencode api get "/api/session/$sid" 2>/dev/null || true)"
+  [ -n "$doc" ] || return 0
+
+  case "$doc" in
+    *parentID*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# A human's terminal is reachable; a tool call's is not. Verified
+# 2026-11-06: from an opencode tool call /dev/tty is readable but CANNOT be
+# opened, so an override prompt there would fail rather than hang.
+has_terminal() {
+  { exec </dev/tty; } 2>/dev/null || return 1
+  return 0
 }
 
 # Outside a repository there is nothing to guard. A check that breaks
@@ -64,9 +105,8 @@ if ! is_agent_session; then
   exit 0
 fi
 
-cat <<'MSG' >&2
-Blocked: this is an agent session committing in the main checkout.
-
+remedy() {
+  cat <<'MSG'
 Task work belongs in a worktree whose branch is named from the task id:
 
     wt switch --create <task-id-slug>
@@ -75,10 +115,52 @@ That creates the branch and worktree and moves the session into it. If the
 work is mid-flight here, move it:
 
     git stash push -u -m wip
-    wt switch --create <branch>      # or: git worktree add .worktrees/<sid> -b <branch>
+    wt switch --create <branch>
     git stash pop
 
-A guard that could be satisfied by habit would not be a guard, so this
-blocks. `git commit --no-verify` bypasses it deliberately and visibly.
+`git commit --no-verify` bypasses this deliberately and visibly.
 MSG
+}
+
+if session_is_subagent; then
+  cat <<'MSG' >&2
+Blocked: a subagent tried to commit in the main checkout.
+
+A subagent is never the single writer for a branch. Hand the work back to
+the session that spawned you; that session owns the worktree and commits.
+
+MSG
+  remedy >&2
+  exit 1
+fi
+
+if ! has_terminal; then
+  cat <<'MSG' >&2
+Blocked: this is an unattended agent commit in the main checkout.
+
+No terminal is attached, so nobody can approve main-checkout work here.
+Run it interactively if that is really what you want.
+
+MSG
+  remedy >&2
+  exit 1
+fi
+
+# Interactive agent session: warn loudly, then let a human decide.
+cat <<'MSG' >&2
+
+  WARNING — you are committing in the MAIN CHECKOUT from an agent session.
+
+  Everything else waits its turn behind this working tree. A worktree keeps
+  this task's branch and the main checkout's cleanliness separate.
+
+MSG
+remedy >&2
+printf '\nType "main" to commit here anyway, or press Enter to abort: ' >&2
+read -r answer </dev/tty || answer=''
+if [ "$answer" = "main" ]; then
+  printf 'Proceeding in the main checkout, as instructed.\n' >&2
+  exit 0
+fi
+printf 'Aborted. Use a worktree.\n' >&2
 exit 1
