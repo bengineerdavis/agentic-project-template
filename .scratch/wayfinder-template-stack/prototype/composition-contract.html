@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PROTOTYPE — base/overlay composition contract</title>
+<style>
+  :root {
+    --bg: #12141a; --panel: #1a1d26; --line: #2b3040; --ink: #e6e8ef;
+    --dim: #949bb0; --ok: #4ade80; --bad: #f87171; --warn: #fbbf24; --accent: #7dd3fc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px; background: var(--bg); color: var(--ink);
+    font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
+       color: var(--dim); margin: 0 0 10px; font-weight: 600; }
+  .sub { color: var(--dim); margin: 0 0 20px; font-size: 13px; }
+  .banner { border-left: 3px solid var(--warn); padding: 8px 12px; margin-bottom: 20px;
+            background: #2a2416; color: #f3e2b4; font-size: 12.5px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 16px; align-items: start; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+  label.row { display: block; padding: 7px 8px; border-radius: 6px; cursor: pointer; }
+  label.row:hover { background: #232838; }
+  label.row input { margin-right: 8px; }
+  .tag { font-size: 10.5px; padding: 1px 6px; border-radius: 999px; margin-left: 6px;
+         border: 1px solid var(--line); color: var(--dim); vertical-align: 1px; }
+  .tag.bound { border-color: #6b4fa8; color: #c4b5fd; }
+  .tag.portable { border-color: #1e6b5e; color: #6ee7d7; }
+  .meta { color: var(--dim); font-size: 12px; margin: 2px 0 0 26px; }
+  pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-size: 12px; }
+  .verdict { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); } .warn { color: var(--warn); }
+  .finding { border-left: 2px solid var(--bad); padding: 6px 10px; margin: 8px 0;
+             background: #2a1a1c; font-size: 12.5px; }
+  .finding.warn { border-color: var(--warn); background: #2a2416; }
+  .finding b { display: block; margin-bottom: 2px; }
+  .state { background: #0d0f14; border: 1px solid var(--line); border-radius: 6px;
+           padding: 10px; margin-top: 14px; color: #b9c0d4; }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
+  .schema { font-size: 11.5px; color: var(--dim); }
+  .schema b { color: var(--accent); }
+  .mode { display: flex; gap: 16px; margin-bottom: 16px; font-size: 13px; }
+  .mode label { cursor: pointer; }
+</style>
+</head>
+<body>
+
+<h1>PROTOTYPE — how a base/overlay composition contract behaves</h1>
+<p class="sub">Throwaway. Answers one question: does declarative compatibility (option c) catch the failures we actually found?</p>
+
+<div class="banner">
+  <b>PROTOTYPE — delete me.</b> No persistence, no tests, no error handling.
+  The question it settles: <i>base publishes extension points + overlay declares
+  requirements → is the mismatch detected?</i>
+</div>
+
+<div class="mode">
+  <strong>Enforcement:</strong>
+  <label><input type="radio" name="mode" value="quiet"> today — quiet compatibility (no declarations)</label>
+  <label><input type="radio" name="mode" value="contract" checked> with contract (option c)</label>
+</div>
+
+<div class="grid">
+
+  <section class="panel">
+    <h2>1 · Base — the noun</h2>
+    <div id="bases"></div>
+    <hr>
+    <h2>Meta-owned convention</h2>
+    <pre class="schema"><b>base.provides:</b>
+  axes:              [is_distributed, has_entry_point,
+                      gui, owns_service_lifecycle]
+  extension_points:  [&lt;path&gt;, ...]
+  bundles:           [&lt;alint bundle&gt;, ...]
+
+<b>overlay.requires:</b>
+  axes:              subset of provides.axes
+  extension_points:  subset of provides.extension_points</pre>
+    <p class="meta" style="margin-left:0">
+      The meta owns <i>this schema</i>. It does not own the bases' answers.
+    </p>
+  </section>
+
+  <section class="panel">
+    <h2>2 · Overlays — the adjectives</h2>
+    <div id="overlays"></div>
+    <hr>
+    <p class="meta" style="margin-left:0">
+      <span class="tag bound">bound</span> ships with its base — no contract needed.<br>
+      <span class="tag portable">portable</span> must declare what it needs.
+    </p>
+  </section>
+
+  <section class="panel">
+    <h2>3 · Verdict</h2>
+    <div id="verdict"></div>
+    <div class="state"><pre id="state"></pre></div>
+  </section>
+
+</div>
+
+<script>
+// ---- The convention (meta-owned; fixed here) -------------------------------
+const AXES = ["is_distributed", "has_entry_point", "gui", "owns_service_lifecycle"];
+
+// ---- Bases: publishers of extension points -------------------------------
+const BASES = {
+  python: {
+    axes: ["is_distributed", "has_entry_point", "gui"],
+    extension_points: ["pyproject.toml", "prek.toml", "mise.toml", "AGENTS.md", "LICENSE"],
+    bundles: ["python"],
+    note: "cannot yet produce a non-CLI project (cli.py + [project.scripts] unconditional)"
+  },
+  chezmoi: {
+    axes: [],
+    extension_points: ["mise.toml", "prek.toml", "AGENTS.md", "LICENSE"],
+    bundles: [],
+    note: "new base; the generalisation python's CLI defect blocks"
+  }
+};
+
+// ---- Overlays: declarers of requirements ---------------------------------
+const OVERLAYS = {
+  agentic: {
+    kind: "portable",
+    requires: { axes: [], extension_points: ["AGENTS.md", "prek.toml", "mise.toml"] },
+    bundles: ["agent-hygiene", "agent-context"],
+    note: "the real agentic overlay — declares workflow, not language"
+  },
+  agentic_bug: {
+    kind: "portable",
+    requires: { axes: [], extension_points: ["AGENTS.md", "prek.toml", "mise.toml"] },
+    bundles: ["agent-hygiene", "agent-context", "python"],
+    note: "SHAPE OF THE REAL DEFECT: template/.alint.yml hardcodes bundled/python"
+  },
+  services: {
+    kind: "portable",
+    requires: { axes: ["owns_service_lifecycle"], extension_points: ["AGENTS.md"] },
+    bundles: ["service-unit"],
+    note: "a language-agnostic domain — the one case meta provision is legitimate"
+  },
+  django: {
+    kind: "bound",
+    parent: "python",
+    requires: { axes: ["is_distributed"], extension_points: ["pyproject.toml"] },
+    bundles: ["python/django"],
+    note: "shipped by the python base; only valid on python"
+  }
+};
+
+// ---- State ---------------------------------------------------------------
+const state = { base: "python", overlays: new Set(["agentic"]), mode: "contract" };
+
+// ---- Rendering -----------------------------------------------------------
+function renderBases() {
+  document.getElementById("bases").innerHTML = Object.entries(BASES).map(([id, b]) => `
+    <label class="row">
+      <input type="radio" name="base" value="${id}" ${state.base === id ? "checked" : ""}>
+      <strong>${id}</strong>
+      <div class="meta">provides axes: ${b.axes.length ? b.axes.join(", ") : "(none)"}<br>
+      extension points: ${b.extension_points.join(", ")}<br>
+      bundles: ${b.bundles.length ? b.bundles.join(", ") : "(none)"}<br>
+      <i>${b.note}</i></div>
+    </label>`).join("");
+  document.querySelectorAll('input[name="base"]').forEach(el =>
+    el.addEventListener("change", () => { state.base = el.value; update(); }));
+}
+
+function renderOverlays() {
+  document.getElementById("overlays").innerHTML = Object.entries(OVERLAYS).map(([id, o]) => `
+    <label class="row">
+      <input type="checkbox" value="${id}" ${state.overlays.has(id) ? "checked" : ""}>
+      <strong>${id}</strong><span class="tag ${o.kind}">${o.kind}</span>
+      <div class="meta">requires axes: ${o.requires.axes.length ? o.requires.axes.join(", ") : "(none)"}<br>
+      requires: ${o.requires.extension_points.join(", ") || "(none)"}<br>
+      bundles: ${o.bundles.join(", ")}<br><i>${o.note}</i></div>
+    </label>`).join("");
+  document.querySelectorAll('#overlays input[type="checkbox"]').forEach(el =>
+    el.addEventListener("change", () => {
+      el.checked ? state.overlays.add(el.value) : state.overlays.delete(el.value);
+      update();
+    }));
+}
+
+document.querySelectorAll('input[name="mode"]').forEach(el =>
+  el.addEventListener("change", () => { state.mode = el.value; update(); }));
+
+// ---- The checker (this is the whole idea) -------------------------------
+function check() {
+  const base = BASES[state.base];
+  const findings = [];
+  const applied = [];
+
+  for (const id of state.overlays) {
+    const ov = OVERLAYS[id];
+
+    // A bound overlay is only meaningful on the base that ships it.
+    if (ov.kind === "bound" && ov.parent !== state.base) {
+      findings.push({
+        level: "bad",
+        title: `${id} is bound to "${ov.parent}", base is "${state.base}"`,
+        detail: "A bound overlay ships with one base by construction. Refuse the stamp."
+      });
+      continue;
+    }
+
+    // Portable: requirements must be a subset of what the base publishes.
+    const missingAxes = ov.requires.axes.filter(a => !base.axes.includes(a));
+    const missingExt = ov.requires.extension_points.filter(p => !base.extension_points.includes(p));
+    const collisions = ov.bundles.filter(b => base.bundles.includes(b));
+
+    if (missingAxes.length) {
+      findings.push({
+        level: "bad",
+        title: `${id} requires axis ${missingAxes.join(", ")}`,
+        detail: `"${state.base}" does not provide it. Stamp refused — this is the signal the base needs extending, not the overlay needs guessing.`
+      });
+    }
+    if (missingExt.length) {
+      findings.push({
+        level: "bad",
+        title: `${id} requires extension point ${missingExt.join(", ")}`,
+        detail: `"${state.base}" never publishes it, so the overlay would be writing into a file it does not own.`
+      });
+    }
+    if (collisions.length) {
+      findings.push({
+        level: "bad",
+        title: `${id} claims bundle ${collisions.join(", ")} already claimed by the base`,
+        detail: "Two ranks owning one concern. This is the real agentic defect: template/.alint.yml hardcodes bundled/python."
+      });
+    }
+    if (!missingAxes.length && !missingExt.length && !collisions.length) applied.push(id);
+  }
+
+  // Quiet mode: today's behaviour. No declarations are consulted, so nothing
+  // is detected — the merge simply proceeds and gaps stay silent.
+  if (state.mode === "quiet") {
+    const silent = [];
+    for (const id of state.overlays) {
+      const ov = OVERLAYS[id];
+      if (ov.kind === "bound" && ov.parent !== state.base)
+        silent.push(`${id} stamped onto ${state.base} — wrong base, undetected`);
+      const missingAxes = ov.requires.axes.filter(a => !base.axes.includes(a));
+      const missingExt = ov.requires.extension_points.filter(p => !base.extension_points.includes(p));
+      if (missingAxes.length) silent.push(`${id} wanted ${missingAxes.join(", ")} — absent, undetected`);
+      if (missingExt.length) silent.push(`${id} wanted ${missingExt.join(", ")} — absent, undetected`);
+      const collisions = ov.bundles.filter(b => base.bundles.includes(b));
+      if (collisions.length) silent.push(`${id} and base both claim ${collisions.join(", ")} — runs twice`);
+    }
+    return { findings: [], applied: [...state.overlays], silent };
+  }
+
+  return { findings, applied, silent: [] };
+}
+
+// ---- Update + surface state ---------------------------------------------
+function update() {
+  const base = BASES[state.base];
+  const { findings, applied, silent } = check();
+  const v = document.getElementById("verdict");
+
+  if (state.mode === "quiet") {
+    v.innerHTML = `<div class="verdict ok">STAMPED</div>
+      <p class="meta" style="margin-left:0">No contract means no check. The merge proceeds
+      and every gap below is invisible until something breaks in CI or an agent trips on it.</p>`
+      + (silent.length
+          ? silent.map(s => `<div class="finding warn"><b>silent</b>${s}</div>`).join("")
+          : `<div class="finding warn"><b>silent</b>nothing missing — this time</div>`);
+  } else if (findings.length) {
+    v.innerHTML = `<div class="verdict bad">STAMP REFUSED</div>
+      <p class="meta" style="margin-left:0">Detected before a single file is written.</p>`
+      + findings.map(f => `<div class="finding"><b>${f.title}</b>${f.detail}</div>`).join("");
+  } else {
+    v.innerHTML = `<div class="verdict ok">COMPATIBLE</div>
+      <p class="meta" style="margin-left:0">Every requirement met by the base's declared
+      extension points. Nothing assumed.</p>`;
+  }
+
+  const record = {
+    mode: state.mode,
+    stack: { base: state.base, overlays: [...state.overlays], applied },
+    base_provides: {
+      axes: base.axes,
+      extension_points: base.extension_points,
+      bundles: base.bundles
+    },
+    findings: findings.map(f => f.title),
+    silent_gaps: silent
+  };
+  document.getElementById("state").textContent = JSON.stringify(record, null, 2);
+}
+
+renderBases();
+renderOverlays();
+update();
+</script>
+</body>
+</html>

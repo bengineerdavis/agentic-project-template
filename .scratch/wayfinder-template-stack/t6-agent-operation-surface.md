@@ -1,7 +1,23 @@
 # T6 — Agent-facing operation surface: each stamped project carries a skill for layer operations
 
-Type: grilling (HITL) · Blocked by: T3 (ownership decides what the skill wraps) · Consumes: T5 (skills are stamped structure alint checks)
-Status: OPEN (blocked) · Claimed: nobody
+Type: grilling (HITL) · Blocked by: — (T3 resolved 2026-11-06) · Consumes: T5 (skills are stamped structure alint checks)
+Status: OPEN — frontier · Claimed: nobody
+
+## From T3 (resolved 2026-11-06)
+
+T3 settled what the skill wraps, so this ticket is unblocked:
+
+- **Base owns the task-operation contract** (storage, identifiers, lifecycle,
+  import boundaries). **Agentic owns the agentic-specific rules**:
+  worktree-per-task enforcement, review integration, task claiming.
+- The per-project skill is **agentic overlay wiring** — it is an adjective's
+  artifact, stamped like the rest of the layer's fragments.
+- What the skill wraps is therefore the agentic-domain half plus a consumer
+  view of the base's contract — **not** the whole composition surface. Copier
+  runs, stack selection, and provenance belong to copier-cat (T7's contract).
+- The skill must not present itself as the owner of task storage, or it will
+  duplicate the base's contract and drift — the same "two owners, no
+  contract" defect T1 found in backlog wiring.
 
 ## Question
 

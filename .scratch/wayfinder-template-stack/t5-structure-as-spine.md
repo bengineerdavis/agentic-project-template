@@ -73,3 +73,41 @@ Context pointer: T1's inventory (alint split across meta/agentic, no
 declared seam) is the raw material. Companion artifact:
 backlog/drafts/draft-1 (the five patterns; this ticket carries only the
 spine principle).
+
+## From T3 (resolved 2026-11-06)
+
+- **alint is a layered file**, like the other shared files: the bundle set is
+  conditional on which base and which overlays a project stamps. Bundle
+  ownership per T3's verdict: **meta** owns the `.alint.yml` scaffold, the
+  profile/bundle questions, and the `ci/<vcs>` bundle; the **base** owns
+  language bundles (`python`, `node`, …); the **overlay** owns agentic
+  structure bundles (`agent-hygiene`, `agent-context`), the binary pin, and
+  the hook.
+- **Defect to fix in this ticket (verified 2026-11-06):**
+  `agentic-project-template/template/.alint.yml` hardcodes the full bundle
+  list including `alint://bundled/python@v1`, and appends a second
+  `ci/github-actions` entry. That is the agentic adjective asserting the
+  Python noun and duplicating the meta's `vcs_platform` handling — the same
+  class of error as two overlays claiming one concern. The agentic layer must
+  emit only its own bundles and let the meta's scaffold supply the rest.
+- **Self-hosting contradiction (verified):** the alint fragment's own comment
+  says "no generic builtin hooks here: alint owns trailing whitespace, final
+  newlines, and merge markers — checkers do not overlap." Both template repos'
+  **root** `prek.toml` nevertheless run `end-of-file-fixer` and
+  `trailing-whitespace`. Stamped projects are clean (python's stamped
+  `prek.toml.jinja` is ruff-only); the template repos' own self-hosting is
+  what contradicts the claim. Decision 3 (self-hosting) must resolve this:
+  either the prose is wrong or the root configs are.
+- **Base depends on overlay for hygiene (verified — the sharpest finding).**
+  `python-project-template/template/prek.toml.jinja` is ruff-only by design,
+  with a comment saying "in layer-stamped projects alint owns trailing
+  whitespace, final newlines, and merge markers." So a **python-only** project
+  — a base with no overlays — gets **no** whitespace, newline, or merge-marker
+  enforcement at all. Under T3's model the base is the noun and must be
+  correct standalone; a base cannot outsource its own hygiene to an adjective.
+  `spec.md:280` already anticipates the right shape: "when the layer lands on
+  a project whose existing hooks already cover something alint enforces, the
+  dedicated tool wins and the alint rule is turned off rather than both
+  running." The base's dedicated hooks are therefore the primary owner, and
+  alint narrows to structure. This reverses the current comment on both
+  sides; decide it here.

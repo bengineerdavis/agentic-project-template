@@ -1,7 +1,14 @@
 # T4 — Migration mechanics for concern moves across repos
 
-Type: grilling (HITL) · Blocked by: T1, T2, T3
-Status: OPEN · Claimed: nobody
+Type: grilling (HITL) · Blocked by: T2, T7
+Status: OPEN (blocked) · Claimed: nobody
+
+## Blocking note (updated 2026-11-06)
+
+T1 and T3 are resolved. T4 now waits on **T2** (the layered-file merge
+mechanism it must migrate projects onto) and **T7** (which channel carries a
+base's answers — a move that changes answers files needs the channel decided
+first).
 
 ## Question
 

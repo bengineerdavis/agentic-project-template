@@ -20,9 +20,13 @@ and a removal plan — with nothing left to decide before ticketing.
   (meta, owns meta_template/ with conditional jinja layers) →
   python-project-template (base layer) → agentic-project-template (agentic
   layer, owns fragments/ + merge engine). Downstream consumers: redge, ballet.
-- Criterion fixed at charting: a concern moves to the meta-template **iff**
-  it is language-agnostic AND every stamped project wants it. Layer-specific
-  concerns stay down-stack. (Q4 rec, accepted)
+- Criterion fixed at charting (Q4 rec, accepted), **superseded by T3
+  (2026-11-06)**: a concern moves to the meta-template iff it is
+  language-agnostic AND every stamped project wants it. Layer-specific
+  concerns stay down-stack. Replaced by the layered rule — meta owns what
+  every base needs, base owns what every project needs, overlay owns what only
+  a domain needs. Kept here so the change of criterion is visible rather than
+  silently rewritten.
 - Standards composition (Q3, accepted): one CODING_STANDARDS.md per stamped
   project assembled like every other shared file (RENDERED_SHARED /
   marked-section merges); language conventions refactoring into separate
@@ -47,22 +51,30 @@ and a removal plan — with nothing left to decide before ticketing.
 ## Decisions so far
 
 - [T1 — Inventory: what does each stack repo own today?](t1-inventory.md): five multi-repo overlaps (AGENTS.md, backlog wiring, LICENSE, CONTRIBUTING, alint split) + four meta-should-own gaps (CODING_STANDARDS, CHANGELOG, .gitignore, renovate); hardest open fact: meta↔python have no composition contract.
+- [T3 — Ownership split: agentic layer inherits from the python repo](t3-ownership-split.md): meta owns agnostic structure, generic tools, and task storage; Python and agentic supply domain expertise through operation contracts; copier-cat orchestrates composition and phone home; redge retains safe sync. All nine of T1's concerns now have an owner (see the ticket's per-concern verdict table). Vocabulary fixed: meta makes bases, base is the noun, overlays are adjectives, a stack is one base plus base-compatible overlays. Placement rule: layered by who needs the concern — meta for what every base needs, base for what every project needs, overlay for what only a domain needs. Layering is the norm: nine shared files need it, so T2 designs the mechanism once. Licensing propagates three ways — meta owns the choice set and SPDX corpus and asks each new base which licenses its projects may offer; the base owns the project renderer. That chain is broken today at the base's `template/`.
 
 ## Not yet specified (fog)
 
-- **Ownership split — what does the agentic layer still own vs inherit from
-  the python repo (incl. backlog-py wiring), and what is removed when?**
-  (maintainer Q5: "this template should be inheriting from python repo,
-  including backlog-py; otherwise what is the map about?") Too coarse to
-  ticket until the inventory research lands; graduates into one ticket per
-  mis-owned concern.
+- **Removal sequence per concern**: T3 resolved ownership. Each concern's
+  implementation order and removal plan now belongs to T4, so no ownership
+  decision remains fogged.
 - **Migration mechanics for concern moves**: when a shared file's owner
   changes, what happens to (a) the migration table provenance comments, (b)
   stamped answers files pointing at the old layer, (c) the tripwire test's
   fragments-walk scope. Fog until the inventory names the movers.
 - **Per-language convention file set**: which languages beyond PYTHON.md
   earn a file (JAVASCRIPT/TYPESCRIPT named by maintainer), and what the
-  merge rule is when a project stamps two language sections.
+  merge rule is when a project stamps two language sections. (T2 territory;
+  noted here because it is still greenfield.)
+- **The project-type taxonomy**: four axes (is_distributed, has_entry_point,
+  gui, owns_service_lifecycle), flags not an enum, noun/adjective model.
+  Decided in principle; placement and mechanics are T8.
+- **License guidance**: a choosealicense-style reasoning surface, since more
+  choices do not help the decision. T9.
+- **Base×overlay compatibility matrix**: which base-and-overlay pairs are
+  actually verified. T3 R6 says stacks carry "tested compatibility records";
+  nobody produces them yet. Copier-cat owns this when it exists — under T7's
+  contract, and out of scope until then.
 - **What the map hands /to-spec**: the spec's shape (per-concern decision
   table? one section per concern?) — clear once two or three concerns have
   resolved; not specifiable now.
@@ -90,10 +102,13 @@ and a removal plan — with nothing left to decide before ticketing.
 | Ticket | Type | Blocked by | Status |
 |---|---|---|---|
 | [T1 — Inventory: what does each stack repo own today?](t1-inventory.md) | research | — | RESOLVED |
-| [T2 — Where does CODING_STANDARDS.md live, and how do sections merge?](t2-standards-composition.md) | grilling | T1 | OPEN — frontier |
-| [T3 — Ownership split: agentic layer inherits from the python repo](t3-ownership-split.md) | grilling | T1 | OPEN — frontier |
-| [T4 — Migration mechanics for concern moves](t4-migration-mechanics.md) | grilling | T1, T2, T3 | OPEN (blocked) |
+| [T2 — Layered-file composition: where does CODING_STANDARDS.md live, and how do sections merge?](t2-standards-composition.md) | grilling | T1, T3 | OPEN — frontier |
+| [T3 — Ownership split: agentic layer inherits from the python repo](t3-ownership-split.md) | grilling | T1 | RESOLVED |
+| [T4 — Migration mechanics for concern moves](t4-migration-mechanics.md) | grilling | T2, T7 | OPEN (blocked) |
 | [T5 — Structure as spine: alint bundles enforce the expected layout, for the template repo and stamped projects](t5-structure-as-spine.md) | grilling | — | OPEN — frontier |
-| [T6 — Agent-facing operation surface: each stamped project carries a skill for layer operations](t6-agent-operation-surface.md) | grilling | T3 | OPEN (blocked) |
+| [T6 — Agent-facing operation surface: each stamped project carries a skill for layer operations](t6-agent-operation-surface.md) | grilling | — | OPEN — frontier |
+| [T7 — Meta↔base composition contract: how do a base's answers compose with the meta's?](t7-meta-base-composition-contract.md) | grilling | T3, T8 | OPEN (blocked) |
+| [T8 — Project-type taxonomy: which axes exist, who asks them, and what acts on them](t8-project-type-taxonomy.md) | grilling | T3 | OPEN — frontier |
+| [T9 — License guidance: a choosealicense-style surface for the licensing decision](t9-license-guidance.md) | grilling | T3 | OPEN — frontier |
 
-**Frontier:** T2, T3, T5.
+**Frontier:** T2, T5, T6, T8, T9.
