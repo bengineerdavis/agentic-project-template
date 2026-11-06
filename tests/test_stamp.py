@@ -271,8 +271,14 @@ def test_stamp_merges_fragments_in_declared_order(tmp_path: Path) -> None:
 
     prek = tomllib.loads((dst / "prek.toml").read_text())["repos"]
     repos = [entry["repo"] for entry in prek]
-    assert "tombi" in repos[0], f"declared order puts tombi first, got {repos}"
-    assert repos[1] == "local"  # alint-check follows tombi
+    # APT-32 added a second `local` repo (the worktree guard, from the
+    # worktrunk fragment). The merge keys on (repo, hook ids), so the two
+    # local repos coexist instead of collapsing. worktrunk is declared
+    # before tombi, so the guard's local entry leads — cheapest check
+    # first, before any linter runs.
+    assert repos[0] == "local", f"declared order puts worktrunk's local first, got {repos}"
+    assert "tombi" in repos[1], f"tombi follows worktrunk, got {repos}"
+    assert repos[2] == "local"  # alint-check follows tombi
 
     agents_md = (dst / "AGENTS.md").read_text()
     positions = {
