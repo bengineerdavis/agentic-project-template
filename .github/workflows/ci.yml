@@ -1,0 +1,41 @@
+# apt-29: run the merge-logic tests and the stamp matrix on every push to
+# main and every pull request. mise tasks are the single source of truth
+# for what "tested" means; CI only bootstraps the toolchain and runs them.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        # Full history: the fragment-history tripwire walks git rev-list and
+        # its vacuity guard fails a shallow checkout by design.
+        with:
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: install mise
+        # mise is installed as a plain binary (not an action), so the only
+        # third-party actions in this workflow stay checkout + setup-uv.
+        run: curl -fsSL https://mise.run | MISE_VERSION=2026.10.5 sh
+
+      - name: install hooks + tools
+        run: mise run install
+
+      - name: pytest (merge logic)
+        run: mise run test
+
+      - name: stamp matrix
+        run: mise run test-template
+        env:
+          # Stamp scratch inside the runner workspace — never shared /tmp
+          # (apt-18/19 hazard class) and self-clearing per job.
+          TEMPLATE_STAMP_ROOT: ${{ runner.temp }}/stamp-matrix
