@@ -10,6 +10,30 @@ quietly contaminate a conclusion.
 
 Append newest first. One entry per deliberate change or finding.
 
+{% if include_lore %}### 2026-11-07 — [variable] CLI `--help` on a subcommand can execute the command
+
+- Question: which `--help` invocations are safe to use as interface probes?
+- Setup: each command run once against a pinned release, output and exit status
+  recorded. The same measurement was taken independently in a chezmoi-managed
+  topic and in a stamped project; both agreed.
+- Result: `--help` is handled only at the top level. With a subcommand present
+  the flag falls through to the normal argument parser, and behaviour depends on
+  the command. Measured on a CLI at version 0.40.0: its `setup --help` ran
+  setup; its `data export --help` ran the export; its `doctor --help` ran
+  read-only diagnostics but exited 1 on a failing check; its `data list --help`
+  and `recall --help` failed with usage errors. Two mutate state and report
+  success — indistinguishable from an intentional run.
+- Verdict: promote-to-tooling. Encoded as a rule in `.context/ai-rules.md`, and
+  version-pinned here because the underlying defect belongs to the tool and may
+  be fixed in a later release. Re-measure on upgrade.
+
+The same tool properties that make a `--help` probe unsafe also make its
+knowledge file unsafe to hand-edit: it is a render of a database, and the next
+export discards anything the database never held. Record that as a `[variable]`
+entry when you first hit it, so the next person inherits the measurement rather
+than repeating it.
+{% endif %}
+
 ### YYYY-MM-DD — [variable] <what is being tried>
 
 - Question:

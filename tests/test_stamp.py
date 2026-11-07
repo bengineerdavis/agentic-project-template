@@ -450,6 +450,43 @@ def test_lore_on_stamps_seed_and_pointer(fresh_stamp: Path) -> None:
     assert ".lore.md" in ai_rules
 
 
+def test_help_flag_rule_is_stamped(fresh_stamp: Path) -> None:
+    """The --help rule must reach every stamped project.
+
+    Regression driver: two CLIs treat `--help` as an ordinary argument once a
+    subcommand is present, so the command runs instead of printing help. The
+    probe looks identical to an intentional run, which is what makes it worth
+    a rule rather than a convention.
+    """
+    ai_rules = (fresh_stamp / ".context" / "ai-rules.md").read_text()
+    assert "--help" in ai_rules
+    assert "broken command" in ai_rules
+
+
+def test_help_flag_rule_needs_no_optional_flag(tmp_path: Path) -> None:
+    """It is unconditional: the hazard is in a third-party CLI, not in any
+    opt-in feature of this layer."""
+    dst = tmp_path / "minimal"
+    dst.mkdir()
+    _stamp(dst, include_lore=False)
+    ai_rules = (dst / ".context" / "ai-rules.md").read_text()
+    assert "--help" in ai_rules
+
+
+def test_lore_pointer_states_the_file_is_a_derived_render(fresh_stamp: Path) -> None:
+    """The pointer must say .lore.md is a render of a database.
+
+    Regression driver: `.lore.md` was hand-merged between checkouts containing
+    diverged stores. Content the database never held was discarded on the next
+    export, and one worktree had forked into a second project row holding
+    entries invisible from the main checkout. 'Treat as read-only' alone does
+    not warn against merging it across branches.
+    """
+    ai_rules = (fresh_stamp / ".context" / "ai-rules.md").read_text()
+    assert "render" in ai_rules
+    assert "lore data merge" in ai_rules
+
+
 def test_lore_opt_out_leaves_no_trace(tmp_path: Path) -> None:
     """include_lore=false must stamp a project with no lore trace:
     no seed file, no ai-rules mention (the answers file itself is the
@@ -461,6 +498,22 @@ def test_lore_opt_out_leaves_no_trace(tmp_path: Path) -> None:
     _stamp(dst, include_lore=False)
     assert not (dst / ".lore.md").exists()
     assert ".lore.md" not in (dst / ".context" / "ai-rules.md").read_text()
+
+
+def test_lore_opt_out_keeps_lore_out_of_experiments_log(tmp_path: Path) -> None:
+    """include_lore=false must not inject vendor-specific evidence.
+
+    Regression driver: the shipped --help entry names one CLI and its command
+    surface. That is useful evidence for a project using that tool and noise
+    for one that is not, and it leaks a dependency the project opted out of.
+    Caught by stamping with the flag off and counting occurrences.
+    """
+    dst = tmp_path / "quiet-probe"
+    dst.mkdir()
+    _stamp(dst, include_lore=False)
+    exp = dst / "docs" / "experiments.md"
+    assert exp.exists()
+    assert "lore" not in exp.read_text()
 
 
 def test_lore_opt_out_update_leaves_seeded_file(tmp_path: Path) -> None:
