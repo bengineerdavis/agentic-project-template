@@ -53,13 +53,27 @@ is_agent_session() {
 # When the API is unreachable we cannot prove top-level, so we treat the
 # session as a subagent. Failing closed here costs a retry; failing open
 # lets a subagent write from the main checkout, which is the bug.
+#
+# The failure is reported as an ENVIRONMENT fault, not a policy violation.
+# A downed daemon and a subagent both block, but they need different fixes,
+# and a message that names the wrong one sends the reader after the wrong
+# problem. This is the distinction APT-33 generalises.
 session_is_subagent() {
   local sid="${OPENCODE_SESSION_ID:-}" doc
   [ -n "$sid" ] || return 1
 
-  command -v opencode >/dev/null 2>&1 || return 0
+  if ! command -v opencode >/dev/null 2>&1; then
+    printf 'Cannot determine session type: the opencode CLI is not on PATH.\n' >&2
+    printf 'This is an environment problem, not a worktree violation.\n' >&2
+    return 0
+  fi
+
   doc="$(opencode api get "/api/session/$sid" 2>/dev/null || true)"
-  [ -n "$doc" ] || return 0
+  if [ -z "$doc" ]; then
+    printf 'Cannot determine session type: the opencode service is unreachable.\n' >&2
+    printf 'This is an environment problem, not a worktree violation.\n' >&2
+    return 0
+  fi
 
   case "$doc" in
     *parentID*) return 0 ;;
@@ -122,24 +136,35 @@ work is mid-flight here, move it:
 MSG
 }
 
-if session_is_subagent; then
-  cat <<'MSG' >&2
-Blocked: a subagent tried to commit in the main checkout.
-
-A subagent is never the single writer for a branch. Hand the work back to
-the session that spawned you; that session owns the worktree and commits.
-
-MSG
-  remedy >&2
-  exit 1
-fi
-
+# Terminal reachability is checked BEFORE the session query, and the query
+# only runs on the interactive path. Two reasons:
+#
+#   1. Cost. A tool call has no terminal, so it is decided here without a
+#      network round trip. Only a human-driven commit pays for the query.
+#   2. Blast radius. The query needs the opencode daemon. Consulting it on
+#      every path meant an unreachable daemon blocked every agent commit in
+#      the main checkout, including a human's, with a message that read like
+#      a policy violation. An environment fault must not masquerade as one.
 if ! has_terminal; then
   cat <<'MSG' >&2
 Blocked: this is an unattended agent commit in the main checkout.
 
 No terminal is attached, so nobody can approve main-checkout work here.
 Run it interactively if that is really what you want.
+
+MSG
+  remedy >&2
+  exit 1
+fi
+
+# Interactive from here on, so the session query is affordable. A subagent
+# that somehow has a terminal is still never the single writer.
+if session_is_subagent; then
+  cat <<'MSG' >&2
+Blocked: a subagent tried to commit in the main checkout.
+
+A subagent is never the single writer for a branch. Hand the work back to
+the session that spawned you; that session owns the worktree and commits.
 
 MSG
   remedy >&2

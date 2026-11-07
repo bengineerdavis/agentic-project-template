@@ -232,6 +232,32 @@ def test_interactive_agent_is_blocked_when_the_human_declines(
     assert "Aborted" in result.stdout, result.stdout
 
 
+def test_an_unreachable_daemon_reads_as_an_environment_fault(
+    main_checkout: Path, tmp_path: Path
+) -> None:
+    """A downed service must not masquerade as a policy violation.
+
+    Both outcomes block, but they need different fixes. The guard still
+    fails closed -- it cannot prove the session is top-level -- while saying
+    which problem the reader actually has.
+    """
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    (bin_dir / "opencode").write_text("#!/usr/bin/env bash\nexit 1\n")
+    (bin_dir / "opencode").chmod(0o755)
+    env = {
+        "PATH": f"{bin_dir}:{os.environ['PATH']}",
+        "OPENCODE_SESSION_ID": "ses_test",
+        "AGENT": "1",
+    }
+    result = run_guard_with_tty(main_checkout, env, answer="main")
+    assert result.returncode != 0, "an unprovable session must still fail closed"
+    assert "environment problem" in result.stdout.lower(), (
+        f"the message must name the environment, not the policy; got: {result.stdout}"
+    )
+    assert "unreachable" in result.stdout.lower(), result.stdout
+
+
 # --- where they are ------------------------------------------------------
 
 
