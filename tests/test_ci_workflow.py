@@ -24,6 +24,16 @@ def test_ci_workflow_triggers_on_push_to_main_and_pr() -> None:
     assert triggers["push"]["branches"] == ["main"]
 
 
+def test_ci_checks_out_full_history() -> None:
+    """The fragment-history tripwire's vacuity guard fails shallow clones
+    by design — CI must hand the suite a full checkout."""
+    step = next(
+        s for s in _workflow()["jobs"]["ci"]["steps"]
+        if s.get("uses", "").startswith("actions/checkout")
+    )
+    assert step.get("with", {}).get("fetch-depth") == 0
+
+
 def test_ci_runs_pytest_then_stamp_matrix() -> None:
     steps = _workflow()["jobs"]["ci"]["steps"]
     names = [s["name"] for s in steps if "name" in s]

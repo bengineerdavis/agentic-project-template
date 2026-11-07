@@ -13,6 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        # Full history: the fragment-history tripwire walks git rev-list and
+        # its vacuity guard fails a shallow checkout by design.
+        with:
+          fetch-depth: 0
 
       - uses: astral-sh/setup-uv@v5
         with:
