@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from agentic_project_template.merge import (
     append_gitignore_lines,
     deep_merge,
