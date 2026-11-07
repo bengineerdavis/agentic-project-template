@@ -6,9 +6,12 @@ Tier 1. Terms used across this repository; link on first use in docs.
   (L0–L7); everything an agent needs to work in a project that is not
   language, build, or personal configuration. As a composition unit it is an
   **overlay** (see below); "layer" names the inner concern set only.
-- **base** — the noun: what kind of repo a project is (python, chezmoi).
-  A base decides that; overlays adjust to it. Not to be confused with the
-  meta's agnostic scaffold, which every base inherits.
+- **base** — the noun: what kind of repo a project is. A base decides that;
+  overlays adjust to it. Not to be confused with the meta's agnostic scaffold,
+  which every base inherits. **Transitional:** python currently plays the noun
+  role because it is the only template that produces a project. The target is
+  an agnostic base with language (python) as an adjective over it — language
+  describes the project, it is not the project.
 - **overlay** — an adjective over a base: one composable sub-domain (language,
   agent practice). Plural, peer domains — no overlay outranks another. The
   agentic concerns are one overlay; so are python's.

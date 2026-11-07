@@ -75,6 +75,10 @@ and a removal plan — with nothing left to decide before ticketing.
   actually verified. T3 R6 says stacks carry "tested compatibility records";
   nobody produces them yet. Copier-cat owns this when it exists — under T7's
   contract, and out of scope until then.
+- **The agnostic base does not exist.** T2 Q5 (iii) settled that language is an
+  adjective, so python should not be the noun — but python is the only template
+  that produces a project, so it plays that role as temporary scaffolding. T10
+  is the exit.
 - **What the map hands /to-spec**: the spec's shape (per-concern decision
   table? one section per concern?) — clear once two or three concerns have
   resolved; not specifiable now.
@@ -102,7 +106,7 @@ and a removal plan — with nothing left to decide before ticketing.
 | Ticket | Type | Blocked by | Status |
 |---|---|---|---|
 | [T1 — Inventory: what does each stack repo own today?](t1-inventory.md) | research | — | RESOLVED |
-| [T2 — Layered-file composition: where does CODING_STANDARDS.md live, and how do sections merge?](t2-standards-composition.md) | grilling | T1, T3 | OPEN — frontier |
+| [T2 — Layered-file composition: where does CODING_STANDARDS.md live, and how do sections merge?](t2-standards-composition.md) | grilling | T1, T3 | IN PROGRESS |
 | [T3 — Ownership split: agentic layer inherits from the python repo](t3-ownership-split.md) | grilling | T1 | RESOLVED |
 | [T4 — Migration mechanics for concern moves](t4-migration-mechanics.md) | grilling | T2, T7 | OPEN (blocked) |
 | [T5 — Structure as spine: alint bundles enforce the expected layout, for the template repo and stamped projects](t5-structure-as-spine.md) | grilling | — | OPEN — frontier |
@@ -110,5 +114,6 @@ and a removal plan — with nothing left to decide before ticketing.
 | [T7 — Meta↔base composition contract: how do a base's answers compose with the meta's?](t7-meta-base-composition-contract.md) | grilling | T3, T8 | OPEN (blocked) |
 | [T8 — Project-type taxonomy: which axes exist, who asks them, and what acts on them](t8-project-type-taxonomy.md) | grilling | T3 | OPEN — frontier |
 | [T9 — License guidance: a choosealicense-style surface for the licensing decision](t9-license-guidance.md) | grilling | T3 | OPEN — frontier |
+| [T10 — The agnostic base: build the noun python is standing in for](t10-agnostic-base.md) | grilling → build | T7, T8 | OPEN (blocked) |
 
 **Frontier:** T2, T5, T6, T8, T9.

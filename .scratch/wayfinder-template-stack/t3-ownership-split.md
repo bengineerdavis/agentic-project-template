@@ -182,6 +182,20 @@ Answers:
   set is conditional on the chosen base and overlays. The hardcoded `python`
   bundle is a T5 defect.
 
+## Correction (2026-11-06, adopted from T2 Q5 option iii)
+
+The Round 7 vocabulary put **python** in the "base (noun)" column. The
+maintainer challenged that in T2 and is right: language is an adjective over
+the noun, not the noun. The four type axes are language-agnostic, and the
+model's own claim ("python and agentic are BOTH adjectives") only holds if
+neither is the base.
+
+**Transitional ruling.** An agnostic base is the target end state. Until one
+exists, python plays the noun role, and that role is **temporary scaffolding**,
+recorded as such. Read the "Base (noun)" column below as *"the layer currently
+playing the noun role"* — today python, eventually an agnostic base that owns
+the language-independent rows now sitting in the meta column.
+
 ## Per-concern verdicts
 
 Each of T1's nine concerns plus lore gets an owner and the round that settles

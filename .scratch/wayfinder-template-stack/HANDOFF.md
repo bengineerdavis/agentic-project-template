@@ -38,9 +38,16 @@ and it is what T4 has been waiting on.
 ## Vocabulary (settled by T3 — use it, don't re-litigate)
 
 - **meta** — makes bases. Not a layer in the project.
-- **base** — the NOUN. What kind of repo this is (python, chezmoi).
+- **base** — the NOUN. What kind of repo this is.
 - **overlay** — an ADJECTIVE. Plural, peer domains, composable (python and
   agentic are both adjectives).
+
+  ⚠️ **Transitional, decided T2 Q5 (iii):** python is an ADJECTIVE (language),
+  not a noun. It currently *plays* the base role only because it is the sole
+  template producing a project. The target is an agnostic base with python as
+  an overlay. Until then, read "base" in older tickets as "the layer currently
+  playing the noun role". An agnostic base owning language-independent hygiene
+  is what fixes a python-only project having none.
 
   ⚠️ **"base" was used two ways before T3.** T3 R2/R3 said "the shared base"
   meaning the meta-provided agnostic scaffold; ADR-0002 means the noun
@@ -110,9 +117,16 @@ project renderer handles 2. Nothing to import upward.
 - `backlog/drafts/draft-1` (Reddit multi-agent patterns, five of them incl.
   compaction discipline) is UNCOMMITTED, pending user review — don't commit or
   edit without being asked.
-- Commit `6a298fb` (retro outcomes: CODING_STANDARDS.md, apt-29/30/31) sits
-  LOCAL on main, NOT pushed. A parallel session/merge owns origin — NEVER
-  push, even when a merge-type approval is granted elsewhere.
+- **Correction (verified 2026-11-06): `6a298fb` is a stale object — 0 branches
+  contain it and it is NOT an ancestor of HEAD.** An earlier handoff claimed it
+  "sits LOCAL on main, NOT pushed". It does not; it was rebased or superseded.
+  The retro outcomes live on main as **`12d03f1`**, an ancestor of HEAD, which
+  is where `CODING_STANDARDS.md` and apt-29/30/31 actually came from. Do not
+  go looking for `6a298fb`; if a task references it, it is stale prose.
+- Two commits are genuinely unpushed relative to `origin/main`:
+  `cd007aa` (apt-29 CI workflow) and `eb628f9` (T3 closure). A parallel
+  session/merge owns origin — **NEVER push**, even when a merge-type approval
+  is granted elsewhere.
 - `.lore.md` left modified by design (daemon auto-updates it; never stash).
 - APT-29/30/31 exist as To Do (CI workflow, dirty-template stamp guard, commit
   wrapper) — unrelated, don't pull them in.
