@@ -1,3 +1,4 @@
+import os
 import tomllib
 from pathlib import Path
 
@@ -52,6 +53,23 @@ def test_stamped_project_gets_alint_config(fresh_stamp: Path) -> None:
 
 def test_stamped_project_gets_context_ai_rules(fresh_stamp: Path) -> None:
     assert (fresh_stamp / ".context" / "ai-rules.md").exists()
+
+
+def test_stamped_project_gets_a_runnable_worktree_guard(fresh_stamp: Path) -> None:
+    """APT-32: the guard must arrive executable and wired, or it fails open.
+
+    The hook entry is repo-root-relative, so a missing file or a lost
+    executable bit leaves every stamped project's `prek` run unable to
+    enforce the isolation rule -- silently, which is the failure mode the
+    guard exists to end.
+    """
+    guard = fresh_stamp / "scripts" / "check-worktree.sh"
+    assert guard.exists(), "the guard script must be stamped"
+    assert os.access(guard, os.X_OK), "a non-executable hook entry never runs"
+
+    prek = (fresh_stamp / "prek.toml").read_text()
+    assert "worktree-guard" in prek, "the hook must be wired, not merely present"
+    assert "scripts/check-worktree.sh" in prek, "the entry must name the stamped path"
 
 
 def test_stamped_project_gets_opencode_surface(fresh_stamp: Path) -> None:
@@ -271,8 +289,14 @@ def test_stamp_merges_fragments_in_declared_order(tmp_path: Path) -> None:
 
     prek = tomllib.loads((dst / "prek.toml").read_text())["repos"]
     repos = [entry["repo"] for entry in prek]
-    assert "tombi" in repos[0], f"declared order puts tombi first, got {repos}"
-    assert repos[1] == "local"  # alint-check follows tombi
+    # APT-32 added a second `local` repo (the worktree guard, from the
+    # worktrunk fragment). The merge keys on (repo, hook ids), so the two
+    # local repos coexist instead of collapsing. worktrunk is declared
+    # before tombi, so the guard's local entry leads — cheapest check
+    # first, before any linter runs.
+    assert repos[0] == "local", f"declared order puts worktrunk's local first, got {repos}"
+    assert "tombi" in repos[1], f"tombi follows worktrunk, got {repos}"
+    assert repos[2] == "local"  # alint-check follows tombi
 
     agents_md = (dst / "AGENTS.md").read_text()
     positions = {

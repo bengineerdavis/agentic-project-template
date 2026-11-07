@@ -1,0 +1,22 @@
+# APT-32 — worktree guard fragment.
+#
+# Declared as a `local` repo hook so it runs inside the project, from the
+# stamped copy of the script. Mirrors fragments/tools/alint/prek.toml,
+# which is the established shape for a per-tool hook contribution.
+#
+# The guard binds only agent sessions (AGENT / AI_AGENT / CLAUDE_CODE /
+# CURSOR_AGENT), so the maintainer's own commits to main are untouched.
+# `--no-verify` remains a deliberate, visible escape.
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "worktree-guard"
+name = "Worktree guard — agent work happens in a worktree"
+entry = "scripts/check-worktree.sh"
+language = "system"
+pass_filenames = false
+always_run = true
+# pre-commit stage only: commit-msg and pre-push have no business here.
+stages = ["pre-commit"]
