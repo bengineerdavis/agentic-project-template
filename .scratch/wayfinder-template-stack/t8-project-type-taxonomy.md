@@ -48,15 +48,33 @@ Recorded here so the ticket is self-contained; not re-opened.
    *base-creation* (what kind of projects does this base make?). But a project
    stamped from that base needs its own values. Does the base re-ask them, or
    does the base's `template/copier.yml` inherit them as fixed defaults?
-2. **`owns_service_lifecycle` — meta or base?** The prior session argued it is
-   a noun claim, so it belongs to the layer establishing the noun. But the
-   meta-placement rule T3 just adopted ("meta owns what every base needs")
-   makes it a candidate for up-top. Unresolved.
-3. **Which base acts on `gui`?** Python maps it to `gui_scripts`. What does a
-   chezmoi base do with it — nothing? Is an axis a base ignores still asked?
-4. **Does T8 own the python base's CLI generalisation**, or does that become
-   a python-repo task? The python base's unconditional CLI is a real defect
-   under the new model, but it may belong to python's own backlog.
+2. ~~**`owns_service_lifecycle` — meta or base?**~~ **RESOLVED 2026-11-07:**
+   base. It is a noun claim, and the decisive argument is structural rather
+   than a popularity test: the base establishes the noun, so the base acts on
+   it. The maintainer's placement refinement (below) points the same way —
+   putting it in the base keeps overlays fewer and simpler, and it is
+   something asked of every git project in an agnostic way. The meta *may*
+   ask it when seeding a new base's `copier.yml` (decision 8, ask centrally,
+   act locally); asking and owning are different.
+
+   The maintainer's provisional refinement to T3's placement rule: if a
+   concern in the BASE means fewer and less complex overlays, and it is
+   something we would ask ourselves for every git project agnostically, the
+   base should own it. Note this pulls DOWN toward base while T3's "every
+   stamped project wants it" pulls UP toward meta — the tension between the
+   two is recorded, not resolved.
+
+3. ~~**Which base acts on `gui`?**~~ **RESOLVED 2026-11-07:** meta may ask,
+   python base acts. It is a noun, and only the base has a consequence for it
+   (Windows-only, per Python's own spec). A base that ignores an axis simply
+   does not read it — that is what `extends:` declares.
+4. ~~**Does T8 own the python base's CLI generalisation**~~ **SPLIT
+   2026-11-07:** T8 owns the *contract* (which axes exist, who asks, who
+   acts); the python repo owns the *implementation* of `has_entry_point`
+   gating its unconditional `cli_name`. The defect is real either way — see
+   `python-project-template/template/pyproject.toml.jinja:31`, which emits
+   `[project.scripts]` for every stamp — but it is a python-repo change, not
+   a T8 decision.
 5. **Where does this taxonomy live in the stack's documentation** — the meta's
    GLOSSARY.md, ADR-0002 (unmerged), or a new ADR? The prior session listed
    ADR candidates: noun/adjective model, four axes, raw-axes-only, decision 4.
