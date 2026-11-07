@@ -1,7 +1,7 @@
 # T2 — Layered-file composition: where does CODING_STANDARDS.md live, and how do sections merge?
 
 Type: grilling (HITL) · Blocked by: T1, T3 (resolved) · Blocks: T4
-Status: IN PROGRESS · Claimed: Ben Davis (2026-11-06)
+Status: RESOLVED (2026-11-07) · Claimed: Ben Davis (2026-11-06)
 
 ## Question
 
@@ -220,3 +220,30 @@ Two of the nine layered files (`.gitignore`, `prek.toml`) already have
 satisfactory mechanisms. Two markdown files (AGENTS.md, CODING_STANDARDS.md)
 are stuck on the single-slot marker. `CONTRIBUTING.md` and `LICENSE` have no
 mechanism at all.
+
+## Resolution
+
+The layered-file merge mechanism is built and merged (`4b0348f`). Per-writer
+markers with rank order meta → base → overlay; `upsert_marked_section` keeps
+its signature and defaults to the overlay writer; `remove_managed_section`
+removes one rank without touching the others or the project's prose; the
+legacy un-named mark is adopted as the overlay block, so a project stamped
+before the change migrates on update.
+
+`CODING_STANDARDS.md` is created when absent, with `CODING_STANDARDS_HEADER`
+written once as the project's prose and the base block upserted from
+`fragments/coding-standards-base.md`.
+
+**This unblocks T4**, which now has both the mechanism to migrate projects
+onto and a worked, tested example of a migration (the legacy-adoption branch).
+
+What the mechanism does *not* decide, and T7/T4 still own:
+
+- the meta's channel into project files, so `meta` blocks can be written at
+  all (today only `base` and `overlay` have writers);
+- whether the overlay adds a CODING_STANDARDS section — today it adds none;
+- AGENTS.md's `overlay` content and CODING_STANDARDS' `base` content are the
+  only two writers wired to real fragments. The other layered files
+  (`.alint.yml`, `CONTRIBUTING.md`, `LICENSE`, `opencode.json`, `mise.toml`,
+  `prek.toml`, `.gitignore`) still use their own primitives and are unchanged
+  by this ticket.

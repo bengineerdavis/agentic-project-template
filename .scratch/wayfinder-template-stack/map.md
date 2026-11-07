@@ -106,7 +106,7 @@ and a removal plan — with nothing left to decide before ticketing.
 | Ticket | Type | Blocked by | Status |
 |---|---|---|---|
 | [T1 — Inventory: what does each stack repo own today?](t1-inventory.md) | research | — | RESOLVED |
-| [T2 — Layered-file composition: where does CODING_STANDARDS.md live, and how do sections merge?](t2-standards-composition.md) | grilling | T1, T3 | IN PROGRESS |
+| [T2 — Layered-file composition: where does CODING_STANDARDS.md live, and how do sections merge?](t2-standards-composition.md) | grilling | T1, T3 | RESOLVED |
 | [T3 — Ownership split: agentic layer inherits from the python repo](t3-ownership-split.md) | grilling | T1 | RESOLVED |
 | [T4 — Migration mechanics for concern moves](t4-migration-mechanics.md) | grilling | T2, T7 | OPEN (blocked) |
 | [T5 — Structure as spine: alint bundles enforce the expected layout, for the template repo and stamped projects](t5-structure-as-spine.md) | grilling | — | OPEN — frontier |
@@ -116,4 +116,5 @@ and a removal plan — with nothing left to decide before ticketing.
 | [T9 — License guidance: a choosealicense-style surface for the licensing decision](t9-license-guidance.md) | grilling | T3 | OPEN — frontier |
 | [T10 — The agnostic base: build the noun python is standing in for](t10-agnostic-base.md) | grilling → build | T7, T8 | OPEN (blocked) |
 
-**Frontier:** T2, T5, T6, T8, T9.
+**Frontier:** T5, T6, T8, T9. (T2 resolved 2026-11-07; T4 unblocked from T2,
+still waiting on T7.)
