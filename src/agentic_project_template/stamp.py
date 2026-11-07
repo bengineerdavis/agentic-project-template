@@ -264,6 +264,19 @@ def apply_fragments(destination: Path) -> list[str]:
         destination / "AGENTS.md",
         _compose_agents_md_section(fragments, backlog_on),
     )
+
+    # T2: the file is layered, one block per rank. The base creates it and owns
+    # the vacuity-guard rule (a statement about tests, not agents); the meta
+    # contributes agnostic defaults and the overlay its judgement calls once
+    # each has a channel. Prose outside the blocks is the project's.
+    standards = repo_root() / "fragments" / "coding-standards-base.md"
+    if standards.exists():
+        standards_target = destination / "CODING_STANDARDS.md"
+        if not standards_target.exists():
+            standards_target.write_text(CODING_STANDARDS_HEADER, encoding="utf-8")
+        upsert_marked_section(
+            standards_target, standards.read_text(encoding="utf-8"), writer="base"
+        )
     if not backlog_on:
         warnings.extend(
             _remove_gated_files(destination, CONDITIONAL_PATHS["include_backlog"])
@@ -272,6 +285,17 @@ def apply_fragments(destination: Path) -> list[str]:
 
 
 LORE_POINTER = "Long-term knowledge lives in `.lore.md`"
+
+# Written once, when the file does not exist. Never rewritten: it is the
+# project's prose, not layer content, and a second write would clobber a
+# project that retitled or extended it.
+CODING_STANDARDS_HEADER = """# Coding standards (reviewer-enforced)
+
+These are judgement calls the review agent enforces — patterns no linter
+could substitute for. Mechanical violations belong in prek hooks or CI
+instead of here.
+
+"""
 
 
 def _include_flag(destination: Path, flag: str, default: bool = True) -> bool:

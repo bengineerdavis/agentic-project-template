@@ -131,6 +131,50 @@ agnostic base exists. The mechanism must not assume language-specificity —
 whoever writes the agnostic section is whichever layer plays the noun role at
 the time.
 
+## Implementation (2026-11-06)
+
+Built, not just decided.
+
+**`merge.py`** — `WRITER_MARKERS = {"meta": 0, "base": 1, "overlay": 2}` is the
+rank map; document order follows it, independent of write order.
+`managed_block(writer, section)` renders one block and rejects an unknown
+writer. `_split_blocks` separates managed blocks from project prose and
+**adopts the legacy un-named marker as the overlay block**, so a project
+stamped before this change migrates on its next update instead of keeping a
+stray block. `upsert_marked_section(destination, section, writer="overlay")`
+keeps its old signature for existing call sites and now touches only its own
+writer's block. `remove_managed_section(destination, writer)` drops one block
+and deletes the file only when nothing (no block, no prose) remains.
+
+**`stamp.py`** — writes `CODING_STANDARDS.md` when absent, using
+`CODING_STANDARDS_HEADER` (written **once**, never rewritten: it is the
+project's prose), then upserts the base block from
+`fragments/coding-standards-base.md`. Verified idempotent across repeated
+stamps.
+
+**TDD.** `tests/test_layered_markers.py` — 11 tests, written first and seen to
+fail on the missing API. Mutation-tested: forcing every writer onto one marker
+(the old defect) fails 7 of them, so they test the mechanism rather than
+restating it. Full suite 66 passed.
+
+### The Q6 migration had no subject — corrected
+
+Q6 assumed projects carry a legacy agentic-only `CODING_STANDARDS.md`.
+**Verified false:** neither layer stamped the file. A fresh stamp produced no
+`CODING_STANDARDS.md`, and python's `template/` has no standards file either —
+it existed only inside this repo. So the migration Q6 selected has nothing to
+migrate *for CODING_STANDARDS.md*.
+
+The mechanism still earns its place, because the same problem exists for
+**AGENTS.md**, which *is* stamped and *does* carry the legacy marker. Verified
+end to end: a project with the old
+`<!-- BEGIN managed: agentic-project-template -->` block, re-stamped, ends up
+with exactly one `overlay` block, the stale body gone, and project prose
+preserved. That is the legacy-adoption branch in `_split_blocks`.
+
+Recorded rather than silently reinterpreted: Q6's decision stands, its stated
+subject was wrong, and the real subject (AGENTS.md) is now proven to work.
+
 ## Facts established before this round (verified 2026-11-06)
 
 ### The marker mechanism cannot hold three writers — proven

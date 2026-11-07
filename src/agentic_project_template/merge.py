@@ -22,6 +22,76 @@ MARKED_SECTION_RE = re.compile(
     re.escape(MARKER_BEGIN) + r".*?" + re.escape(MARKER_END), re.DOTALL
 )
 
+# Layered files carry one block per writer (T2). The single un-named marker
+# above can hold exactly one block — its regex matches the first pair, so a
+# second writer silently destroyed the first. Ansible's blockinfile documents
+# the same rule ("when more than one block should be handled in one file you
+# must change the marker per task"); the writer name lives in the marker.
+# Rank order is the document order, independent of write order.
+WRITER_MARKERS: dict[str, int] = {"meta": 0, "base": 1, "overlay": 2}
+
+_BLOCK_RE = re.compile(
+    r"<!-- BEGIN managed: (?P<writer>[a-z-]+) -->\n"
+    r"(?P<body>.*?)"
+    r"<!-- END managed: (?P=writer) -->\n?",
+    re.DOTALL,
+)
+
+
+def managed_block(writer: str, section: str) -> str:
+    """Render one writer's block, markers included."""
+    if writer not in WRITER_MARKERS:
+        raise ValueError(
+            f"unknown writer {writer!r}: expected one of "
+            f"{sorted(WRITER_MARKERS)}"
+        )
+    body = section.strip()
+    return (
+        f"<!-- BEGIN managed: {writer} -->\n"
+        f"{body}\n"
+        f"<!-- END managed: {writer} -->"
+    )
+
+
+def _split_blocks(text: str) -> tuple[str, list[tuple[str, str]]]:
+    """Separate managed blocks from prose, adopting the legacy marker.
+
+    A project stamped before per-writer markers carries the old
+    `agentic-project-template` block. It is the agentic overlay's, so it is
+    read as the overlay writer's content rather than left as a stray block.
+    """
+    legacy = MARKED_SECTION_RE.search(text)
+    if legacy:
+        inner = legacy.group(0)
+        body = inner[len(MARKER_BEGIN): -len(MARKER_END)].strip("\n")
+        text = (
+            text[: legacy.start()]
+            + f"<!-- BEGIN managed: overlay -->\n{body}\n<!-- END managed: overlay -->\n"
+            + text[legacy.end():]
+        )
+
+    blocks: dict[str, str] = {}
+    for match in _BLOCK_RE.finditer(text):
+        blocks[match.group("writer")] = match.group("body").strip("\n")
+
+    prose = _BLOCK_RE.sub("", text)
+    return prose, list(blocks.items())
+
+
+def _render(prose: str, blocks: dict[str, str]) -> str:
+    """Reassemble, blocks in rank order."""
+    ordered = [
+        managed_block(writer, blocks[writer])
+        for writer in sorted(blocks, key=lambda w: (WRITER_MARKERS.get(w, 99), w))
+    ]
+    trailing = "\n".join(ordered)
+    if not ordered:
+        return prose
+    if not prose.strip():
+        return trailing + "\n"
+    return prose.rstrip("\n") + "\n\n" + trailing + "\n"
+
+
 
 def load_toml(path: Path) -> dict[str, Any]:
     with path.open("rb") as fh:
@@ -278,23 +348,44 @@ def append_gitignore_lines(destination: Path, lines: list[str]) -> None:
         fh.write("\n".join(missing) + "\n")
 
 
-def upsert_marked_section(destination: Path, section: str) -> None:
-    """Insert or replace the managed section in a markdown file."""
-    block = f"{MARKER_BEGIN}\n{section.strip()}\n{MARKER_END}\n"
+def upsert_marked_section(
+    destination: Path, section: str, writer: str = "overlay"
+) -> None:
+    """Insert or replace one writer's managed block in a markdown file.
+
+    Other writers' blocks and the project's own prose are left untouched.
+    Default writer is the agentic overlay — the layer's existing call sites.
+    """
+    managed_block(writer, section)  # validate before touching the file
+
     if destination.exists():
-        text = destination.read_text(encoding="utf-8")
-        if MARKED_SECTION_RE.search(text):
-            text = MARKED_SECTION_RE.sub(
-                lambda _match: block.rstrip("\n"), text
-            )
-        else:
-            if not text.endswith("\n"):
-                text += "\n"
-            text += "\n" + block
-        destination.write_text(text, encoding="utf-8")
+        prose, blocks = _split_blocks(destination.read_text(encoding="utf-8"))
     else:
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text(block, encoding="utf-8")
+        prose, blocks = "", []
+
+    updated = {w: body for w, body in blocks if w != writer}
+    updated[writer] = section.strip()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(_render(prose, updated), encoding="utf-8")
+
+
+def remove_managed_section(destination: Path, writer: str) -> None:
+    """Drop one writer's block; delete the file if nothing else remains."""
+    if writer not in WRITER_MARKERS:
+        raise ValueError(
+            f"unknown writer {writer!r}: expected one of "
+            f"{sorted(WRITER_MARKERS)}"
+        )
+    if not destination.exists():
+        return
+
+    prose, blocks = _split_blocks(destination.read_text(encoding="utf-8"))
+    remaining = {w: body for w, body in blocks if w != writer}
+    if not remaining and not prose.strip():
+        destination.unlink()
+        return
+    destination.write_text(_render(prose, remaining), encoding="utf-8")
+
 
 
 def merge_json_file(destination: Path, overlay: dict) -> list[str]:

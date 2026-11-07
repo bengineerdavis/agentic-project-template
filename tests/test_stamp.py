@@ -166,7 +166,7 @@ def test_stamped_mise_task_names_have_no_colons(fresh_stamp: Path) -> None:
 
 def test_stamped_agents_md_carries_managed_section(fresh_stamp: Path) -> None:
     agents_md = (fresh_stamp / "AGENTS.md").read_text()
-    assert "BEGIN managed: agentic-project-template" in agents_md
+    assert "BEGIN managed: overlay" in agents_md
     assert "mise run review-deep" in agents_md
 
 
@@ -213,7 +213,7 @@ def test_layer_stamp_existing_project_preserves_base(tmp_path: Path) -> None:
 
     agents_md = (dst / "AGENTS.md").read_text()
     assert "Original router content." in agents_md
-    assert "BEGIN managed: agentic-project-template" in agents_md
+    assert "BEGIN managed: overlay" in agents_md
 
     prek_text = (dst / ".pre-commit-config.yaml").read_text()
     assert "ruff-check" in prek_text and "tombi-format" in prek_text
@@ -350,8 +350,8 @@ def test_agents_md_section_no_marker_growth(tmp_path: Path) -> None:
     upsert_marked_section(target, section)
     upsert_marked_section(target, section)
     text = target.read_text()
-    assert text.count("<!-- BEGIN managed: agentic-project-template -->") == 1
-    assert text.count("<!-- END managed: agentic-project-template -->") == 1
+    assert text.count("<!-- BEGIN managed: overlay -->") == 1
+    assert text.count("<!-- END managed: overlay -->") == 1
     assert "# Existing" in text
 
 
