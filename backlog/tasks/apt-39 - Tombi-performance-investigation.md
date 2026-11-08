@@ -3,7 +3,7 @@ id: APT-39
 title: Tombi performance investigation
 status: In Progress
 created_date: 2026-11-07 21:49
-updated_date: 2026-11-08 17:47
+updated_date: 2026-11-08 17:59
 ---
 
 ## Description
@@ -22,7 +22,7 @@ Retro/wayfinder item 4. Understand why tombi-format is slow locally (commit hook
 ## Implementation Notes
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
-
+Findings (Nov 8, measured in scratch worktree at 69d68c7): tombi EXONERATED for warm runs — full prek 0.38s, tombi-format 0.30s, commits 0.29-0.39s even with .toml staged. Roborev v4 post-commit hook ALSO fires in worktrees now (scratch commits got jobs 500/501 instantly) — the old worktree-blindness gotcha is obsolete. Historical 120s timeouts NOT reproducible; leading unverified hypothesis: daemon down/draining at the time (daemon_state shutdown_draining was set 2026-11-05). Recommendation: KEEP tombi-format on commit; on timeout check git log before re-running. Full evidence: docs/research/tombi-performance.md
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
 
 ## Final Summary
