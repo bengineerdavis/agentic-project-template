@@ -1,8 +1,9 @@
 ---
 id: APT-39
 title: Tombi performance investigation
-status: To Do
+status: In Progress
 created_date: 2026-11-07 21:49
+updated_date: 2026-11-08 17:47
 ---
 
 ## Description

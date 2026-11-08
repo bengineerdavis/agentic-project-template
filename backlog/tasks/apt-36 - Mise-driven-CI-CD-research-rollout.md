@@ -1,11 +1,11 @@
 ---
 id: APT-36
 title: 'Mise-driven CI/CD: research + rollout'
-status: To Do
+status: In Progress
 created_date: 2026-11-07 21:49
 dependencies:
 - APT-29
-updated_date: 2026-11-07 21:49
+updated_date: 2026-11-08 17:47
 ---
 
 ## Description

@@ -3,6 +3,7 @@ id: APT-34
 title: Standardize dev Python on 3.14 latest bugfix
 status: To Do
 created_date: 2026-11-07 21:49
+updated_date: 2026-11-08 17:47
 ---
 
 ## Description
@@ -20,7 +21,7 @@ Retro 2026-11-07 Fix A (amended by maintainer: standardize on 3.14 latest bugfix
 ## Implementation Notes
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
-
+Agreed with the maintainer (Nov 8 2026): floating pin — mise [tools] python = "3.14", .python-version = 3.14, CI python-version 3.14; mise/uv resolve the latest 3.14 bugfix. NOT 3.12, NOT exact-bugfix pinning.
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
 
 ## Final Summary

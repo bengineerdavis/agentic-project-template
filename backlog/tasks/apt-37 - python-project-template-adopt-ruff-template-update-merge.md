@@ -5,7 +5,7 @@ status: To Do
 created_date: 2026-11-07 21:49
 dependencies:
 - APT-34
-updated_date: 2026-11-07 21:49
+updated_date: 2026-11-08 17:47
 ---
 
 ## Description
@@ -23,7 +23,7 @@ Parent task for the ruff decision (retro Fix B): add ruff to the python base tem
 ## Implementation Notes
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
-
+Agreed with the maintainer (Nov 8 2026): broader ruff scope for the base template — F (pyflakes, incl. F821) + E/W (pycodestyle) + I (isort). Churn accepted.
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
 
 ## Final Summary
