@@ -35,3 +35,13 @@ agentic layer only.
   (commit-hygiene skill — declared dependency).
 - Plain language in docs, commits, and conversation; prose proportional to
   its subject.
+- A `--help` that does anything except print help is a broken command: stop
+  using it and never probe a surface that way again. It is a convention only,
+  and it is handled at the top level — with a subcommand present the flag
+  falls through to the ordinary parser and the command runs, reporting
+  success, so the probe is indistinguishable from an intentional call. Ask the
+  parent command for help, then read the source. Never append `--help` to a
+  subcommand whose behaviour is unverified.
+- Never hand-edit or hand-merge a tool's derived knowledge file (for example
+  `.lore.md`): it is a render of a database, and the next export discards
+  anything the database never held. Reconcile through the tool's own CLI.
