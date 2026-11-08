@@ -3,6 +3,7 @@ id: APT-26
 title: Stamp roborev wiring into projects
 status: To Do
 created_date: 2026-11-04 07:09
+updated_date: 2026-11-08 21:36
 ---
 
 ## Description
@@ -34,7 +35,7 @@ Decision record: Agreed with the maintainer 2026-11-04: verify via stamp matrix 
 ## Implementation Notes
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
-
+SCOPE TRIM (2026-11-08, maintainer 'yes to both' on APT-38): worktree-wiring scope dropped — v4 post-commit hook verified firing in worktrees (Nov 8, post-commit.log). APT-26 narrows to: stamped roborev skill (dotagents, via agents.toml.jinja) + minimal REVIEW.md seeding at stamp time (overlay block).
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
 
 ## Final Summary
