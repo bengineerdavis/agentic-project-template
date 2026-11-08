@@ -87,6 +87,16 @@ and a removal plan — with nothing left to decide before ticketing.
   constraint but beyond this map — graduates into its own effort once the
   operation contract (T6) is stable. Fog records the dependency, not the
   design.
+- **The layer is not usable through copier alone** (found 2026-11-08 while
+  settling T8's provenance question). `copier update` looks for
+  `.copier-answers.yml` but the layer writes `.agentic-answers.yml`, so a bare
+  `copier update` refuses; and `copier.yml` declares no `_tasks`, so a bare
+  `copier copy` renders the template files but never applies the fragments —
+  no `mise.toml`, `prek.toml`, `AGENTS.md`, or `backlog/`. Today the CLI is the
+  only supported entry point. Whether that stays true is a separate question
+  from the composition design T7/T10 cover: making the layer pure-copier-
+  capable needs `_tasks` hooks plus a first-render path. Not scheduled; recorded
+  so the assumption "copier can drive this on its own" is not made silently.
 
 ## Out of scope
 

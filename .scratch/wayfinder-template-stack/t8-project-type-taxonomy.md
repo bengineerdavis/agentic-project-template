@@ -103,6 +103,62 @@ provenance field or a sidecar before inference can be safe. That is a design
 decision this ticket now carries, not a build detail. Recorded, not silently
 deferred.
 
+### Provenance decision — AGREED 2026-11-08: sidecar file
+
+Maintainer chose **(b) sidecar**: a `.agentic-provenance.yml` written only by
+the layer CLI, recording which answer keys a human set. Rejected: (a) an
+in-file `_provenance` map, because copier overwrites `.agentic-answers.yml` on
+every copy and update, so that map would have to fight the tool that owns the
+file; (c) inferring from git history, wrong whenever the answers file was
+committed alongside unrelated edits.
+
+**Verified empirically before recording** (scratch dir, not the repo):
+
+1. A file the template does not render is **not** ignored by `copier update`.
+   A hand-written `.agentic-provenance.yml` survived an update byte-identical.
+   copier only rewrites the paths it renders; anything else in the destination
+   is untouched.
+2. The `.gitignore` the layer stamps does **not** match it (`git check-ignore`
+   reports no match), so it is committed and travels with the project.
+3. Bare `copier copy` writes `.agentic-answers.yml` but applies **no
+   fragments** — no `mise.toml`, no `prek.toml`, no `AGENTS.md`, no
+   `backlog/`. See "Pure-copier viability" below; this is why it matters.
+
+### Pure-copier viability — ASKED BY MAINTAINER, ANSWERED 2026-11-08
+
+The maintainer asked whether (b) still works "if the user only uses the copier
+templates, minus future copier-cat management". It does not, and the reason is
+not the sidecar — it is that **the layer is not usable through copier alone
+today**. Verified against the repo, not assumed:
+
+- **`copier update` needs `.copier-answers.yml`; the layer writes
+  `.agentic-answers.yml`.** A bare `copier update --defaults` in a layer-stamped
+  project fails with *"Cannot update because cannot obtain old template
+  references from `.copier-answers.yml`"*. The update only proceeds when the
+  invocation is told `-a .agentic-answers.yml`, i.e. when it is driven by the
+  layer CLI (`cli.py:133-139` passes `answers_file=".agentic-answers.yml"`).
+- **`copier.yml` declares no `_tasks`.** Fragments (`fragments/mise-layer.toml`,
+  `fragments/tools/*`, the AGENTS.md sections) are merged by
+  `apply_fragments()` in `stamp.py`. Bare `copier copy` therefore produces a
+  project missing `mise.toml`, `prek.toml`, `AGENTS.md`, and `backlog/` — the
+  layer's own wiring.
+- **`_answers_file` is declared, `_tasks` is not.** So there is no
+  copier-native hook that could apply the fragments or write a provenance file.
+
+**Conclusion for (b):** the sidecar is written by the layer CLI, and today the
+layer CLI is the only supported entry point anyway. So the decision is
+*consistent* with a pure-copier world — but it does not make the layer
+pure-copier-capable. If a future goal is "usable through `copier copy` and
+`copier update` with no CLI", two things must be added to `copier.yml`
+independently of provenance: `_tasks` entries that run the fragment merge, and
+a first-render path that writes the sidecar. That is a separate ticket, not a
+provenance detail, and it is recorded on the map rather than folded in here.
+
+The inverse also holds and is worth naming: because the CLI owns the entry
+point, the sidecar has no competing writer. Neither copier nor a future
+copier-cat would touch it, since neither renders that path.
+
+
 ## Question
 
 Every stamping layer needs to know what kind of repo it is stamping. Today
