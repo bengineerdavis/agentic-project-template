@@ -37,8 +37,27 @@ Language and build concerns live in the base project; do not confuse the two.
 - `.alint.yml` enforces repository shape; its `agent` output carries fix
   instructions — run what it says. `AGENTS.md` here is kept in step with the
   enforced rules; do not edit the managed section by hand.
+- A `--help` that does anything except print help is a broken command: stop
+  using it and never probe its surface that way again. It is only a
+  convention, and some CLIs ignore it once a subcommand is present — the flag
+  falls through to the normal parser and the command runs. The failure is
+  silent because the command succeeds and reports success, so nothing
+  distinguishes the probe from an intentional run.
+  Ask the tool for help at the level that documents its subcommands (e.g.
+  `tool help`, or the parent command with no arguments), then read the source
+  or the man page. Never append `--help` to a subcommand whose behaviour you
+  have not verified.
+  Confirm the interface before relying on it, and record a tool's measured
+  behaviour as version-pinned — the convention may hold in one release and
+  not the next.
 {% if include_lore %}- Long-term knowledge lives in `.lore.md`, curated by lore; treat it as
-  read-only context (it is machine-managed).{% endif %}
+  read-only context. It is a *render* of a database, not the store: hand-editing
+  or hand-merging it loses work, because the next `lore data export` discards
+  anything the database never held. Change knowledge through the lore CLI only.
+  Worktrees can fork the store into a second project row, so the render may show
+  a partial view; reconcile with `lore data merge` then `lore data export`, and
+  check for the duplicate row before trusting what `.lore.md` shows.
+  `lore help` documents the CLI — never `lore <subcommand> --help`.{% endif %}
 
 ## Commands
 
