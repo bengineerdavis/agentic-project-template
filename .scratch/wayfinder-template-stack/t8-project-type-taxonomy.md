@@ -1,7 +1,107 @@
 # T8 — Project-type taxonomy: which axes exist, who asks them, and what acts on them
 
 Type: grilling (HITL) · Blocked by: T3 (resolved) · Blocks: T7
-Status: OPEN — frontier · Claimed: nobody
+Status: IN PROGRESS · Claimed: Ben Davis (2026-11-07)
+
+## Facts verified before this round (2026-11-07)
+
+The prior session's axis research (`copier-template-copier-template/docs/research/repo-types.md`)
+was **re-verified rather than inherited**, and the load-bearing claim checked
+against a live toolchain:
+
+- **The axes are orthogonal and combinable.** `cargo init --lib` plus a
+  `src/main.rs` yields one package whose metadata reports **both** `['lib']`
+  and `['bin']` targets. So project type is not an enum; a single repo can
+  occupy several cells at once.
+- **Python's CLI is unconditional — this is the defect.** `template/pyproject.toml.jinja`
+  emits `[project.scripts]` with `{{ cli_name }} = "{{ project_slug }}.cli:app"`
+  with no conditional, and `template/src/*/cli.py.jinja` is stamped
+  unconditionally. `copier.yml` asks 15 questions and **none** is about project
+  type. `cli_name` is always asked.
+- **`python-project-template` scaffolds no GUI** — no `gui_scripts`, no `gui`
+  question, nothing in `template/`. **Corrected 2026-11-08:** an earlier
+  version of this line read "Python has no GUI support at all", which was a
+  category error — one grep of a *template repo* was reported as a fact about
+  the *language*. Python ships GUI support in the standard library (`tkinter`,
+  Tk 8.6 verified on the maintainer's machine) and has a large third-party
+  ecosystem; the *template* emits only `[project.scripts]`. Verified against
+  docs.python.org and the PyPA entry-points spec; recorded in the python repo's
+  `docs/research/python-gui-support.md`.
+- The research doc's own **UNVERIFIED** list stands (Cookiecutter Data Science,
+  Nx, Yeoman, `cargo-generate` were never fetched). They are not cited here.
+
+## Round 1 answers (maintainer, 2026-11-08)
+
+- **Q1 (a) — meta asks at creation; existing projects get inferred.** Conditional
+  on resolving the staleness question: *what happens when a new key appears, or
+  a key's meaning moves enough that the next update must re-ask?* See the
+  prototype below; the answer is not settled and Q1 cannot be implemented
+  without it.
+- **Q2 (c) — meta records `owns_service_lifecycle`; the layer owning service
+  wiring acts on it.** Same staleness caveat.
+- **Q3 (c) — record `gui`, and file the missing support as its own ticket.**
+  With a correction: the premise of the question was wrong (see the GUI
+  correction above). The axis is real and python *can* act on it.
+- **Q4 — yes**, capturing the build work T8 generates is correct. T8 owns the
+  design; the build goes to backlog tasks.
+- **Q5 — organize via the backlog tool, spec-driven.** Build work T8 generates
+  is filed as backlog tasks (not the wayfinder tickets themselves — the map
+  stays coherent until it clears and hands off to `/to-spec`). HITL
+  confirmation is requested before build work is finalized as a backlog draft.
+
+## The staleness state machine (prototype, 2026-11-08)
+
+`prototype/answer-staleness.html` — throwaway, double-click, no persistence.
+It crosses **8 template changes** against **6 project answer states** (48
+cells, 39 modelled, 9 impossible) and marks every cell where today's shipped
+behaviour disagrees with what it should be: **18 disagreements**. Those 18 are
+the bug surface.
+
+Template changes: unchanged · new question · renamed · removed · semantics
+bumped · default changed · allowed values changed · became conditional.
+
+Answer states: no answer · explicit-and-valid · explicit-but-stale ·
+accepted-the-default · value-no-longer-allowed · question-gone.
+
+Actions: keep · fill default · **re-ask** · migrate · drop + warn.
+
+### What today actually does
+
+`_include_flag` is the only staleness logic in the codebase: a missing key
+takes the default, so a stamp predating a question never breaks. Everything
+else is kept silently, forever. That is correct for feature toggles and wrong
+for structural facts about a project.
+
+### The five cases that break the naive design
+
+1. **"Chose it" vs "accepted it" are indistinguishable.** The answers file
+   stores values only, so two projects with `include_git_ai: false` — one typed,
+   one defaulted — are byte-identical. Any rule that treats them differently
+   needs provenance the file does not carry. The real choice is *which of the
+   two you are willing to be wrong about*.
+2. **The semantics trap is the only class where keeping is actively wrong.**
+   When a key's meaning moves, "preserve the user's answer" applies consent
+   given for one thing to another. It is silent and consent-free, and the file
+   still looks correct.
+3. **A rename silently reverses a deliberate choice.** With no mapping, the new
+   key is absent, defaults fill, the human's opt-in is undone, and the old key
+   lingers unowned. Fix shape: a declared old→new mapping — the
+   `_LAYER_AUTHORED_SCRIPTS` pattern applied to keys.
+4. **A new question is not always safe to default.** "Missing key takes the
+   default" is right for toggles and wrong for structural facts. The distinction
+   is not old-vs-new key; it is *is this key a claim about the project?*
+5. **An answer can outlive its gate.** When a question becomes conditional and
+   the gate goes false, the answer is unreachable but present; flip the gate
+   back and a choice made in a different world re-applies. Dropping is right
+   only if the update records *why*.
+
+### Consequence for Q1/Q2 — the design is not implementable yet
+
+The maintainer's Q1 answer (a) requires distinguishing "human chose" from
+"template defaulted". **The answers file cannot express that**, so (a) needs a
+provenance field or a sidecar before inference can be safe. That is a design
+decision this ticket now carries, not a build detail. Recorded, not silently
+deferred.
 
 ## Question
 
@@ -64,10 +164,22 @@ Recorded here so the ticket is self-contained; not re-opened.
    stamped project wants it" pulls UP toward meta — the tension between the
    two is recorded, not resolved.
 
-3. ~~**Which base acts on `gui`?**~~ **RESOLVED 2026-11-07:** meta may ask,
-   python base acts. It is a noun, and only the base has a consequence for it
-   (Windows-only, per Python's own spec). A base that ignores an axis simply
-   does not read it — that is what `extends:` declares.
+3. ~~**Which base acts on `gui`?**~~ **RESOLVED 2026-11-07, REFINED 2026-11-08:**
+   meta asks, python base acts. It is a noun, and only the base has a
+   consequence for it. **The "Windows-only" gloss is accurate** — verified
+   against the PyPA entry-points spec, which says plainly: "The difference
+   between `console_scripts` and `gui_scripts` only affects Windows systems."
+   A base that ignores an axis simply does not read it — that is what
+   `extends:` declares.
+
+   **Corrected 2026-11-08 (second time).** An earlier revision of this line
+   said the Windows-only gloss "was too strong" — that was wrong, and the spec
+   says so directly. What is genuinely open is narrower: whether the python
+   template *should* scaffold GUI. The language supports it (stdlib `tkinter`,
+   no dependency) and `gui_scripts` exists for it; the template emits only
+   `[project.scripts]`. That is a template-design question, not a
+   language-capability one. See the python repo's
+   `docs/research/python-gui-support.md`.
 4. ~~**Does T8 own the python base's CLI generalisation**~~ **SPLIT
    2026-11-07:** T8 owns the *contract* (which axes exist, who asks, who
    acts); the python repo owns the *implementation* of `has_entry_point`

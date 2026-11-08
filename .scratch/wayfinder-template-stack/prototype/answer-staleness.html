@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PROTOTYPE — when must an update re-ask the user?</title>
+<style>
+  :root{
+    --bg:#0f1116;--panel:#181b23;--line:#2a2f3d;--ink:#e7e9f0;--dim:#8f97ad;
+    --ok:#4ade80;--bad:#f87171;--warn:#fbbf24;--accent:#7dd3fc;--purple:#c4b5fd;
+    --keep:#1e3a2a;--fill:#1e2f3a;--ask:#3a2a1e;--migrate:#2a2440;--drop:#3a1e1e;--none:#14161c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:22px;background:var(--bg);color:var(--ink);font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+  h1{font-size:17px;margin:0 0 4px}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--dim);margin:0 0 10px;font-weight:600}
+  .sub{color:var(--dim);margin:0 0 16px;font-size:12.5px}
+  .banner{border-left:3px solid var(--warn);padding:8px 12px;margin-bottom:16px;background:#241f12;color:#efe0b4;font-size:12px}
+  .tabs{display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap}
+  .tabs button{background:var(--panel);color:var(--dim);border:1px solid var(--line);padding:6px 12px;border-radius:6px;cursor:pointer;font:inherit;font-size:12px}
+  .tabs button.on{background:#243040;color:var(--ink);border-color:#3d5570}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+  table{border-collapse:collapse;width:100%;font-size:11.5px}
+  th,td{border:1px solid var(--line);padding:5px 7px;text-align:left;vertical-align:top}
+  th{background:#20242f;color:var(--dim);font-weight:600;font-size:11px}
+  td.cell{cursor:pointer;text-align:center;font-size:11px;padding:6px 4px}
+  td.cell:hover{outline:2px solid var(--accent);outline-offset:-2px}
+  td.cell.rot{opacity:.30;cursor:not-allowed}
+  .keep{background:var(--keep)}.fill{background:var(--fill)}.ask{background:var(--ask)}
+  .migrate{background:var(--migrate)}.drop{background:var(--drop)}.none{background:var(--none)}
+  .diff::after{content:"\25C6";color:var(--warn);margin-left:2px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11px;color:var(--dim)}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .row{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+  label.sel{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--dim)}
+  select{background:#0d0f14;color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:5px 7px;font:inherit;font-size:12px;min-width:190px}
+  .verdict{font-size:14px;font-weight:700;margin:2px 0 8px}
+  .ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+  pre{margin:0;white-space:pre-wrap;word-break:break-word;font-size:11.5px}
+  .state{background:#0b0d11;border:1px solid var(--line);border-radius:6px;padding:9px;margin-top:10px;color:#b6bed2}
+  .finding{border-left:2px solid var(--bad);padding:6px 10px;margin:8px 0;background:#251517;font-size:12px}
+  .finding.warn{border-color:var(--warn);background:#241f12}
+  .finding.info{border-color:var(--accent);background:#122230}
+  .finding b{display:block;margin-bottom:3px}
+  hr{border:0;border-top:1px solid var(--line);margin:12px 0}
+  .wt{display:none}.wt.on{display:block}
+  code{background:#0b0d11;padding:1px 4px;border-radius:3px;color:var(--purple);font-size:11px}
+  .case{border:1px solid var(--line);border-radius:6px;padding:9px;margin:8px 0;background:#14171e}
+</style>
+</head>
+<body>
+
+<h1>PROTOTYPE &mdash; when must an update re-ask the user?</h1>
+<p class="sub">Throwaway. Answers one question: <i>which answer states force a re-ask rather than a silent keep-or-default?</i></p>
+
+<div class="banner">
+  <b>PROTOTYPE &mdash; delete me.</b> No persistence; state lives in memory.
+  Question it settles: the re-ask state machine for templated answers.
+</div>
+
+<div class="tabs">
+  <button class="on" data-tab="matrix">Matrix &middot; all combinations</button>
+  <button data-tab="free">Free play</button>
+  <button data-tab="break">Walkthroughs</button>
+</div>
+
+<section id="matrix" class="panel">
+  <h2>Template change &times; project answer state</h2>
+  <p class="sub" style="margin-top:-4px">Cell = what the update does. <span style="color:var(--warn)">&#9670;</span> marks a cell where <b>today's behaviour</b> and <b>the proposed behaviour</b> disagree &mdash; every &#9670; is a latent bug. Click any cell for the reasoning.</p>
+  <div style="overflow-x:auto"><table id="mtx"></table></div>
+  <div class="legend">
+    <span><i class="keep"></i>keep</span>
+    <span><i class="fill"></i>fill default</span>
+    <span><i class="ask"></i>re-ask</span>
+    <span><i class="migrate"></i>migrate</span>
+    <span><i class="drop"></i>drop + warn</span>
+    <span><i class="none"></i>impossible</span>
+  </div>
+  <div id="celldetail"></div>
+</section>
+
+<section id="free" class="panel wt">
+  <h2>Free play</h2>
+  <div class="row">
+    <label class="sel">Template change<select id="fChange"></select></label>
+    <label class="sel">Project answer<select id="fState"></select></label>
+  </div>
+  <div id="fOut"></div>
+  <div class="state"><pre id="fStateJson"></pre></div>
+</section>
+
+<section id="break" class="panel wt">
+  <h2>Walkthroughs &mdash; cases that break the naive design</h2>
+  <div class="tabs" id="wtTabs"></div>
+  <div id="wtBody"></div>
+</section>
+
+<script>
+const CHANGES = {
+  UNCHANGED:{label:'unchanged',desc:'nothing about the question moved'},
+  NEW:{label:'new question',desc:'key did not exist before'},
+  RENAMED:{label:'renamed',desc:'new key, old key retired'},
+  REMOVED:{label:'removed',desc:'question deleted from the template'},
+  SEMANTICS_BUMPED:{label:'semantics bumped',desc:'same key, the answer now means something else'},
+  DEFAULT_CHANGED:{label:'default changed',desc:'same key and meaning, the default moved'},
+  ENUM_CHANGED:{label:'allowed values changed',desc:'choices added or removed'},
+  BECAME_CONDITIONAL:{label:'became conditional',desc:'asked only when another answer holds'}
+};
+
+const STATES = {
+  ABSENT:{label:'no answer',desc:'key never present in the answers file'},
+  EXPLICIT_VALID:{label:'explicit, valid',desc:'human chose it; choice is still legal'},
+  EXPLICIT_STALE:{label:'explicit, stale',desc:'human chose it under an earlier meaning'},
+  DEFAULTED:{label:'accepted default',desc:'present, but never actively chosen'},
+  VALUE_INVALID:{label:'value not allowed',desc:'chosen value was removed from the choices'},
+  ORPHANED:{label:'question gone',desc:'value present, no question owns it any more'}
+};
+
+const ACTIONS = {
+  KEEP:{label:'keep',cls:'keep'},
+  FILL:{label:'fill default',cls:'fill'},
+  ASK:{label:'RE-ASK',cls:'ask'},
+  MIGRATE:{label:'migrate',cls:'migrate'},
+  DROP:{label:'drop + warn',cls:'drop'},
+  NONE:{label:'&mdash;',cls:'none'}
+};
+
+function decide(change, state){
+  // impossible combinations
+  if(change==='UNCHANGED' && ['EXPLICIT_STALE','VALUE_INVALID','ORPHANED'].includes(state))
+    return {today:'NONE',proposed:'NONE',why:'A question that did not change cannot produce a stale or invalid answer.',harm:''};
+  if(change==='NEW' && ['EXPLICIT_VALID','EXPLICIT_STALE','DEFAULTED','VALUE_INVALID','ORPHANED'].includes(state))
+    return {today:'NONE',proposed:'NONE',why:'A brand-new key cannot already carry an answer.',harm:''};
+
+  // UNCHANGED
+  if(change==='UNCHANGED'){
+    if(state==='ABSENT') return {today:'FILL',proposed:'FILL',why:'Nothing to preserve; the default is the only value available.',harm:'none'};
+    return {today:'KEEP',proposed:'KEEP',why:'A value already present, still legal, still meaning the same thing. Nothing to decide.',harm:'none'};
+  }
+
+  // NEW
+  if(change==='NEW' && state==='ABSENT')
+    return {today:'FILL',proposed:'ASK',
+      why:'Today the key is absent, so `_include_flag` silently takes the default. That is only safe when the default is right for every existing project. A new load-bearing question (project type, service posture) is not: the default is a guess about the project, made without looking at it.',
+      harm:'The project silently receives a decision nobody made. If the key names something structural, the wrong branch renders and stays rendered.'};
+
+  // RENAMED
+  if(change==='RENAMED'){
+    if(state==='ABSENT') return {today:'FILL',proposed:'FILL',why:'Nothing was chosen under the old key either, so the default is as good as anything.',harm:'none'};
+    return {today:'FILL',proposed:'MIGRATE',
+      why:"Today the new key is absent, so the default fills, and the human's old choice is abandoned while the old key lingers unowned. With a declared mapping (old to new) the choice carries across.",
+      harm:'Silent loss of a deliberate choice. The project looks fine and behaves differently from what its owner asked for.'};
+  }
+
+  // REMOVED
+  if(change==='REMOVED'){
+    if(state==='ABSENT') return {today:'NONE',proposed:'NONE',why:'Nothing to remove.',harm:''};
+    return {today:'KEEP',proposed:'DROP',
+      why:'Today the value stays in the answers file forever, owned by no question. Artifacts it once controlled are not withdrawn either.',
+      harm:'A dead key that reads as live. The next person (or agent) trusts a setting that no longer does anything.'};
+  }
+
+  // SEMANTICS_BUMPED
+  if(change==='SEMANTICS_BUMPED'){
+    if(state==='ABSENT') return {today:'FILL',proposed:'FILL',why:'No prior answer to misinterpret. The new default applies cleanly.',harm:'none'};
+    const strong = state==='EXPLICIT_STALE';
+    return {today:'KEEP',proposed:'ASK',
+      why:'The human answered a different question than the one now asked. Keeping the value is not "preserving their choice" &mdash; it applies their old choice to a new meaning they never saw.',
+      harm: strong
+        ? 'THE WORST CLASS. Silent, consent-free behaviour change. The project believes it opted out of something it has now opted into.'
+        : 'One degree weaker than an explicit stale answer: nobody actively picked the stale meaning, but nobody picked the new one either.'};
+  }
+
+  // DEFAULT_CHANGED
+  if(change==='DEFAULT_CHANGED'){
+    if(state==='ABSENT') return {today:'FILL',proposed:'FILL',why:'The new default is simply the current default.',harm:'none'};
+    if(state==='EXPLICIT_VALID') return {today:'KEEP',proposed:'KEEP',why:'An explicit choice always outranks a default change. This is the case deep_merge already gets right, and why base-wins exists.',harm:'none'};
+    return {today:'KEEP',proposed:'KEEP',
+      why:'Tempting to move them to the new default &mdash; they never chose. But that silently changes behaviour, and "accepted the default" is not "wants whatever the default becomes". Keep, and say so.',
+      harm:'If we moved them: an unrequested behaviour change on upgrade. Keeping is stale but reversible; moving is invisible.'};
+  }
+
+  // ENUM_CHANGED
+  if(change==='ENUM_CHANGED'){
+    if(state==='VALUE_INVALID') return {today:'KEEP',proposed:'ASK',
+      why:'The chosen value no longer exists. Rendering with it produces a branch nobody maintains, or nothing at all.',
+      harm:'Broken render, or a silently dead option. The project cannot tell which without reading the template.'};
+    if(state==='ABSENT') return {today:'FILL',proposed:'FILL',why:'The default is by construction a legal member.',harm:'none'};
+    return {today:'KEEP',proposed:'KEEP',why:'Their value survived the enum change. Nothing to do.',harm:'none'};
+  }
+
+  // BECAME_CONDITIONAL
+  if(change==='BECAME_CONDITIONAL'){
+    if(state==='ORPHANED') return {today:'KEEP',proposed:'DROP',
+      why:'The gate is now false, so the question is never asked again &mdash; but the old answer still sits in the file claiming to mean something.',
+      harm:'An answer that outlives its gate. It reappears if the gate flips back, applying a choice made in a different world.'};
+    if(state==='ABSENT') return {today:'FILL',proposed:'FILL',why:'Nothing to gate.',harm:'none'};
+    return {today:'KEEP',proposed:'KEEP',why:'The gate holds and the answer is valid. A conditional hides the question; it does not invalidate the answer.',harm:'none'};
+  }
+
+  return {today:'NONE',proposed:'NONE',why:'Unmodelled combination.',harm:''};
+}
+
+/* ---------------- matrix ---------------- */
+function buildMatrix(){
+  const sk = Object.keys(STATES);
+  const head = '<tr><th style="min-width:140px">change &darr; / answer &rarr;</th>' +
+    sk.map(s=>`<th title="${STATES[s].desc}">${STATES[s].label}</th>`).join('') + '</tr>';
+  const rows = Object.keys(CHANGES).map(c=>{
+    const cells = sk.map(s=>{
+      const d = decide(c,s);
+      const a = ACTIONS[d.proposed]||ACTIONS.NONE;
+      const rot = d.proposed==='NONE';
+      const differs = d.proposed!==d.today;
+      return `<td class="cell ${a.cls}${rot?' rot':''}${differs?' diff':''}" data-c="${c}" data-s="${s}">${rot?'&#183;':a.label}</td>`;
+    }).join('');
+    return `<tr><th title="${CHANGES[c].desc}">${CHANGES[c].label}</th>${cells}</tr>`;
+  }).join('');
+  document.getElementById('mtx').innerHTML = head+rows;
+}
+
+document.addEventListener('click',e=>{
+  const td = e.target.closest('td.cell');
+  if(!td || td.classList.contains('rot')) return;
+  showCell(td.dataset.c, td.dataset.s);
+});
+
+function showCell(c,s){
+  const d = decide(c,s);
+  const differs = d.proposed!==d.today;
+  document.getElementById('celldetail').innerHTML = `
+    <hr><h2>${CHANGES[c].label} &times; ${STATES[s].label}</h2>
+    <p class="sub">${CHANGES[c].desc}. ${STATES[s].desc}.</p>
+    <div class="grid2">
+      <div><h2>today</h2><div class="verdict ${differs?'bad':'ok'}">${ACTIONS[d.today].label}</div></div>
+      <div><h2>proposed</h2><div class="verdict ${differs?'warn':'ok'}">${ACTIONS[d.proposed].label}</div></div>
+    </div>
+    <div class="finding info"><b>why</b>${d.why}</div>
+    ${differs&&d.harm?`<div class="finding"><b>harm if we keep today's behaviour</b>${d.harm}</div>`:''}`;
+}
+
+/* ---------------- free play ---------------- */
+function buildFree(){
+  const cs=document.getElementById('fChange'), ss=document.getElementById('fState');
+  cs.innerHTML=Object.entries(CHANGES).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
+  ss.innerHTML=Object.entries(STATES).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
+  cs.onchange=ss.onchange=renderFree;
+  renderFree();
+}
+
+function renderFree(){
+  const c=document.getElementById('fChange').value, s=document.getElementById('fState').value;
+  const d=decide(c,s), differs=d.proposed!==d.today, out=document.getElementById('fOut');
+  out.innerHTML = d.proposed==='NONE'
+    ? `<div class="finding warn"><b>impossible combination</b>${d.why}</div>`
+    : `<div class="grid2">
+         <div><h2>today</h2><div class="verdict ${differs?'bad':'ok'}">${ACTIONS[d.today].label}</div></div>
+         <div><h2>proposed</h2><div class="verdict ${differs?'warn':'ok'}">${ACTIONS[d.proposed].label}</div></div>
+       </div>
+       <div class="finding info"><b>why</b>${d.why}</div>
+       ${differs&&d.harm?`<div class="finding"><b>harm if we keep today's behaviour</b>${d.harm}</div>`
+                         :`<div class="finding warn"><b>no change needed</b>Today's behaviour is already correct here.</div>`}`;
+  document.getElementById('fStateJson').textContent = JSON.stringify(
+    {template_change:c, project_answer:s, today:d.today, proposed:d.proposed, differs, why:d.why, harm:d.harm||null},null,2);
+}
+
+/* ---------------- walkthroughs ---------------- */
+const WTS = [
+  {
+    title:'1 · chose it vs accepted it',
+    setup:`Copier's answers file stores <b>values only</b>. Two projects both read
+      <code>include_git_ai: false</code>. One human typed <code>false</code> after reading the
+      prompt; the other pressed enter on a default of <code>false</code>.`,
+    cases:[['DEFAULT_CHANGED','EXPLICIT_VALID'],['DEFAULT_CHANGED','DEFAULTED']],
+    point:`<b>The break:</b> they are byte-identical on disk, so the update cannot distinguish them.
+      Any rule that treats them differently needs a <i>provenance</i> record the answers file does not
+      currently carry. The design choice is therefore not "handle both correctly" but
+      <b>which of the two you are willing to be wrong about</b> &mdash; and today's answer is
+      "both, silently".`
+  },
+  {
+    title:'2 · the semantics trap',
+    setup:`<code>include_lore</code> used to mean "stamp the AGENTS.md pointer". In the next
+      version it means "stamp the pointer <i>and</i> initialise the memory database". A project
+      answered <code>true</code> under the old meaning.`,
+    cases:[['SEMANTICS_BUMPED','EXPLICIT_STALE'],['SEMANTICS_BUMPED','DEFAULTED']],
+    point:`<b>The break:</b> this is the only class where "keep the user's answer" is
+      <b>actively wrong</b> &mdash; you are applying consent given for one thing to another.
+      Every other row degrades to staleness; this one degrades to an <b>unconsented action</b>.
+      It is also invisible: the answers file looks correct.`
+  },
+  {
+    title:'3 · the rename that eats a choice',
+    setup:`<code>include_consult_llm</code> is renamed to <code>include_consult</code>.
+      A project deliberately set it <code>true</code>.`,
+    cases:[['RENAMED','EXPLICIT_VALID'],['RENAMED','ABSENT']],
+    point:`<b>The break:</b> with no mapping, the new key is absent so it fills with the default
+      (<code>false</code>) &mdash; the human's deliberate opt-in is silently reversed, and the old
+      key sits there unowned. The fix is a declared old&rarr;new mapping, which is exactly the
+      <code>_LAYER_AUTHORED_SCRIPTS</code> shape applied to keys instead of scripts.`
+  },
+  {
+    title:'4 · a new question is not always safe to default',
+    setup:`The meta gains <code>project_type: cli</code> with a sensible default. An existing
+      project is, in fact, a service. Its answers file has no such key.`,
+    cases:[['NEW','ABSENT']],
+    point:`<b>The break:</b> <code>_include_flag</code>'s "missing key takes the default" is
+      <b>correct for feature toggles and wrong for structural facts</b>. The distinction is not
+      old-vs-new key, it is <b>is this key a claim about the project?</b> Feature flags may default.
+      Facts about what the repo <i>is</i> must be inferred from disk or asked.`
+  },
+  {
+    title:'5 · the answer that outlives its gate',
+    setup:`<code>owns_service_lifecycle</code> becomes conditional on
+      <code>project_type == service</code>. A project that answered <code>true</code> is later
+      re-typed to <code>cli</code>, so the gate goes false and the question stops being asked.`,
+    cases:[['BECAME_CONDITIONAL','ORPHANED'],['BECAME_CONDITIONAL','EXPLICIT_VALID']],
+    point:`<b>The break:</b> the answer is now unreachable but still present. Flip the type back
+      and a choice made in a different world silently re-applies. Dropping is correct <i>only</i>
+      when the gate stayed false &mdash; which means the update must record <b>why</b> it dropped
+      something, not just drop it.`
+  }
+];
+
+function buildWTs(){
+  document.getElementById('wtTabs').innerHTML = WTS.map((w,i)=>
+    `<button data-w="${i}" class="${i===0?'on':''}">${w.title}</button>`).join('');
+  document.getElementById('wtTabs').onclick = e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    document.querySelectorAll('#wtTabs button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); renderWT(+b.dataset.w);
+  };
+  document.querySelectorAll('#wtTabs button').forEach(b=>{
+    if(b.dataset.w==='0') b.classList.add('on');
+  });
+  renderWT(0);
+}
+
+function renderWT(i){
+  const w = WTS[i];
+  const cases = w.cases.map(([c,s])=>{
+    const d = decide(c,s), differs=d.proposed!==d.today;
+    return `<div class="case">
+      <div><code>${CHANGES[c].label}</code> &times; <code>${STATES[s].label}</code></div>
+      <div class="grid2" style="margin-top:6px">
+        <div><span class="sub">today</span><div class="verdict ${differs?'bad':'ok'}">${ACTIONS[d.today].label}</div></div>
+        <div><span class="sub">proposed</span><div class="verdict ${differs?'warn':'ok'}">${ACTIONS[d.proposed].label}</div></div>
+      </div>
+      <div class="finding info"><b>why</b>${d.why}</div>
+      ${differs&&d.harm?`<div class="finding"><b>harm</b>${d.harm}</div>`:''}
+    </div>`;
+  }).join('');
+  document.getElementById('wtBody').innerHTML =
+    `<p class="sub">${w.setup}</p>${cases}
+     <div class="finding warn"><b>what this case teaches</b>${w.point}</div>`;
+}
+
+/* ---------------- tabs ---------------- */
+document.querySelector('.tabs').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-tab]'); if(!b) return;
+  document.querySelectorAll('body > .tabs button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  ['matrix','free','break'].forEach(id=>{
+    document.getElementById(id).classList.toggle('on', id===b.dataset.tab);
+  });
+});
+
+buildMatrix(); buildFree(); buildWTs();
+</script>
+</body>
+</html>
+
+</body>
+</html>
