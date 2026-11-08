@@ -110,7 +110,20 @@ normalise() {
 }
 
 if [ "$(normalise "$git_dir")" != "$(normalise "$common_dir")" ]; then
-  # A linked worktree: the agent is where it should be.
+  # A linked worktree: the agent is where it should be. Ownership is
+  # enforced here, at the one place a worktree commit happens, rather than
+  # at commit time in general -- the main-checkout rules above are a
+  # different question from "may this session write to this branch".
+  branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+  owners="$(dirname "$0")/wt-owners.sh"
+  if [ -n "$branch" ] && [ -x "$owners" ]; then
+    # A missing owner script means the project did not adopt ownership;
+    # that must not block, or this hook breaks every project that has not.
+    "$owners" check "$branch" || {
+      printf 'Run: %s release %s   (only the holder may do this)\n' "$owners" "$branch" >&2
+      exit 1
+    }
+  fi
   exit 0
 fi
 
