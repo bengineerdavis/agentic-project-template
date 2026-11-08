@@ -107,7 +107,16 @@ claim_commit() {
   payload="$(printf 'session: %s\nharness: %s\nrole: %s\nbranch: %s\nclaimed_at: %s\n' \
     "$session" "$harness" "$role" "$branch" "$(date -Iseconds)")"
   empty_tree="$(git hash-object -t tree /dev/null)"
-  printf '%s\n' "$payload" | git commit-tree "$empty_tree" -F -
+  # A claim is machine state, not a human commit, so it must not inherit the
+  # user's identity requirement. Without this, `git commit-tree` fails on any
+  # machine with no configured user.email -- a fresh container, a CI runner,
+  # a bot account -- and the failure looks like a concurrency bug.
+  printf '%s\n' "$payload" |
+    GIT_AUTHOR_NAME="${GIT_AUTHOR_NAME:-wt-owners}" \
+    GIT_AUTHOR_EMAIL="${GIT_AUTHOR_EMAIL:-wt-owners@localhost}" \
+    GIT_COMMITTER_NAME="${GIT_COMMITTER_NAME:-wt-owners}" \
+    GIT_COMMITTER_EMAIL="${GIT_COMMITTER_EMAIL:-wt-owners@localhost}" \
+    git commit-tree "$empty_tree" -F -
 }
 
 read_claim() {

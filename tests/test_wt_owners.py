@@ -159,6 +159,51 @@ def test_claiming_an_unheld_branch_succeeds(repo: Path) -> None:
     assert "claimed" in result.stdout
 
 
+def test_claiming_works_with_no_configured_git_identity(tmp_path: Path) -> None:
+    """A claim is machine state, not a human commit.
+
+    CI caught this: `git commit-tree` inherits the user identity requirement,
+    so on a runner with no user.email every claim failed with "Author
+    identity unknown" -- which reads like a concurrency bug and is not one.
+    HOME is redirected so git cannot pick up this machine's config.
+    """
+    root = tmp_path / "noident"
+    root.mkdir()
+    home = tmp_path / "home"
+    home.mkdir()
+    # Redirecting HOME is not enough on its own: git derives an identity
+    # from the local username and hostname, so a test that only hides
+    # ~/.gitconfig passes whether or not the fix is present -- a vacuous
+    # test. Emptying user.name/user.email reproduces the CI runner, which
+    # has no such fallback.
+    env = {
+        "PATH": os.environ["PATH"],
+        "HOME": str(home),
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_CONFIG_GLOBAL": str(home / ".gitconfig"),
+        "GIT_AUTHOR_NAME": "",
+        "GIT_AUTHOR_EMAIL": "",
+        "GIT_COMMITTER_NAME": "",
+        "GIT_COMMITTER_EMAIL": "",
+    }
+    subprocess.run(["git", "init", "-q", str(root)], check=True, env=env)
+    (home / ".gitconfig").write_text(
+        "[user]\n\tname =\n\temail =\n"
+    )
+    result = subprocess.run(
+        ["bash", str(SCRIPT), "claim", "feature/noident", "--session", "ses_1"],
+        cwd=str(root),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, (
+        f"the claim must not need a human identity; got: {result.stderr}"
+    )
+    assert "claimed" in result.stdout
+
+
 def test_a_second_writer_is_refused_while_the_first_is_live(repo: Path, stub_harness) -> None:
     env = stub_harness(live=True)
     assert run(repo, "claim", "feature/b", "--session", "ses_1", env=env).returncode == 0
