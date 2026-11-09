@@ -170,6 +170,25 @@ def test_stamped_agents_md_carries_managed_section(fresh_stamp: Path) -> None:
     assert "mise run review-deep" in agents_md
 
 
+def test_alint_instructions_are_generated_and_refreshed(fresh_stamp: Path) -> None:
+    """APT-42: the generated block reflects the active rules, not static prose."""
+    agents = fresh_stamp / "AGENTS.md"
+    text = agents.read_text()
+    assert text.count("<!-- alint:start -->") == 1
+    assert "Lint rules enforced by alint" in text
+
+    config = fresh_stamp / ".alint.yml"
+    config.write_text(
+        config.read_text()
+        + '\nrules:\n  - id: custom-skill-structure\n    kind: dir_contains\n    select: "skills/*"\n    require: ["spec.md"]\n    level: error\n'
+    )
+    apply_fragments(fresh_stamp)
+    updated = agents.read_text()
+    assert "custom-skill-structure" in updated
+    assert updated.count("<!-- alint:start -->") == 1
+    assert "BEGIN managed: overlay" in updated
+
+
 @pytest.mark.parametrize("doc", ["issue-tracker", "triage-labels", "domain"])
 def test_stamped_project_gets_agent_doc(fresh_stamp: Path, doc: str) -> None:
     assert (fresh_stamp / "docs" / "agents" / f"{doc}.md").exists()
