@@ -272,6 +272,49 @@ def test_permits_an_agent_commit_inside_a_worktree(
     )
 
 
+def test_a_worktree_commit_is_refused_when_another_session_owns_the_branch(
+    worktree: Path, stub_opencode
+) -> None:
+    """Ownership is enforced where the worktree commit happens.
+
+    The main-checkout rules answer "where are you". This answers "may this
+    session write to this branch", which is a different question and the
+    one a second writer trips.
+    """
+    owners = worktree.parent.parent / "owners"
+    owners.mkdir(exist_ok=True)
+    # A stub that always reports another live session as the holder.
+    (owners / "wt-owners.sh").write_text(
+        "#!/usr/bin/env bash\n"
+        'printf \'branch %s is held by writer ses_other\\n\' "$2" >&2\n'
+        "exit 1\n"
+    )
+    (owners / "wt-owners.sh").chmod(0o755)
+
+    # The guard looks for wt-owners.sh beside itself.
+    scripts = worktree.parent.parent / "scripts"
+    scripts.mkdir(exist_ok=True)
+    import shutil
+
+    shutil.copy(SCRIPT, scripts / "check-worktree.sh")
+    shutil.copy(owners / "wt-owners.sh", scripts / "wt-owners.sh")
+    (scripts / "check-worktree.sh").chmod(0o755)
+
+    env = stub_opencode(None)
+    result = subprocess.run(
+        ["bash", str(scripts / "check-worktree.sh")],
+        cwd=str(worktree),
+        env=_base_env(env),
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 1, (
+        f"a second writer must be refused; got: {result.stdout}{result.stderr}"
+    )
+    assert "held by writer" in result.stderr, result.stderr
+
+
 def test_permits_a_human_commit_from_the_main_checkout(main_checkout: Path) -> None:
     """The maintainer commits to main legitimately; the guard must not bind them."""
     result = run_guard(main_checkout, {})
