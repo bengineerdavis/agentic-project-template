@@ -105,6 +105,59 @@ def run(cwd: Path, *args: str, env: dict[str, str] | None = None):
     )
 
 
+def run_with_tty(cwd: Path, *args: str, env: dict[str, str] | None = None):
+    """Run with a real controlling terminal.
+
+    `has_terminal` opens /dev/tty, which a plain subprocess has no access to
+    — so without this, every --force path is refused for the wrong reason:
+    "no terminal" rather than "no reason". Given one, the higher gates
+    become reachable and the grant can actually be exercised.
+
+    pty.openpty() plus setsid and TIOCSCTTY is the portable replacement for
+    GNU `script -c`, which BSD `script` does not implement.
+    """
+    import fcntl
+    import pty
+    import termios
+
+    base = {"PATH": os.environ["PATH"], "HOME": os.environ.get("HOME", "/root")}
+    base.update(env or {})
+
+    master, slave = pty.openpty()
+
+    def _child_setup() -> None:
+        os.setsid()
+        fcntl.ioctl(slave, termios.TIOCSCTTY, 0)
+
+    proc = subprocess.Popen(
+        ["bash", str(SCRIPT), *args],
+        cwd=str(cwd),
+        env=base,
+        stdin=slave,
+        stdout=slave,
+        stderr=slave,
+        preexec_fn=_child_setup,
+    )
+    os.close(slave)
+    chunks: list[bytes] = []
+    try:
+        while True:
+            chunk = os.read(master, 4096)
+            if not chunk:
+                break
+            chunks.append(chunk)
+    except OSError:
+        pass
+    os.close(master)
+    proc.wait(timeout=60)
+    return subprocess.CompletedProcess(
+        args=proc.args,
+        returncode=proc.returncode,
+        stdout=b"".join(chunks).decode(errors="replace"),
+        stderr="",
+    )
+
+
 # --- the load-bearing property ------------------------------------------
 
 
@@ -479,3 +532,44 @@ def test_a_notes_writer_leaves_ownership_untouched(repo: Path) -> None:
 
     # The claim is byte-identical, not merely present.
     assert run(repo, "holder", "feature/notes").stdout == before
+
+
+def test_force_succeeds_from_a_human_terminal_and_records_the_takeover(
+    repo: Path, stub_harness
+) -> None:
+    """The grant path, which the three refusal tests cannot reach.
+
+    A refusal-only test suite is satisfied by a mechanism that never works:
+    every gate refuses, and every assertion about refusing passes. This is
+    the counterpart — an override that actually lands, with the record to
+    prove who was displaced and why.
+    """
+    env = stub_harness(live=True)
+    assert run(repo, "claim", "feature/takeover", "--session", "ses_stuck", env=env).returncode == 0
+
+    # No agent markers: this is a human at a terminal.
+    human = {k: v for k, v in env.items() if k not in ("AGENT", "AI_AGENT", "CLAUDE_CODE", "CURSOR_AGENT")}
+    result = run_with_tty(
+        repo,
+        "release",
+        "feature/takeover",
+        "--session",
+        "ses_human",
+        "--force",
+        "--reason",
+        "holder hung in a retry loop for 40 minutes; user confirmed",
+        env=human,
+    )
+
+    assert result.returncode == 0, f"the takeover must land; got: {result.stdout}"
+    assert "took over" in result.stdout
+
+    holder = run(repo, "holder", "feature/takeover", env=env).stdout
+    # The record must name the new holder, the displaced one, and the reason.
+    assert "session: ses_human" in holder, holder
+    assert "supersedes: ses_stuck" in holder, holder
+    assert "reason: holder hung in a retry loop" in holder, holder
+
+    # And the new holder now controls the branch.
+    assert run(repo, "check", "feature/takeover", "--session", "ses_human", env=env).returncode == 0
+    assert run(repo, "check", "feature/takeover", "--session", "ses_stuck", env=env).returncode == 1
