@@ -1,9 +1,9 @@
 ---
 id: APT-34
 title: Standardize dev Python on 3.14 latest bugfix
-status: To Do
+status: In Progress
 created_date: 2026-11-07 21:49
-updated_date: 2026-11-08 17:47
+updated_date: 2026-11-09 04:15
 ---
 
 ## Description
