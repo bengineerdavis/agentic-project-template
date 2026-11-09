@@ -6,7 +6,7 @@ created_date: 2026-11-09 23:22
 labels:
 - enforcement
 - bug
-updated_date: 2026-11-09 23:31
+updated_date: 2026-11-09 23:42
 ---
 
 ## Description
@@ -25,7 +25,7 @@ The agentic layer carries .alint.yml and prek enforcement, but AGENTS.md does no
 ## Implementation Notes
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
-The stamp/update seam now calls alint export-agents-md --inline --output AGENTS.md through the declared mise tool, and the prek hook refreshes it before checks. A fresh stamp and a later custom rule are both exercised through the public stamping interface.
+The stamp/update seam now calls alint export-agents-md --inline --output AGENTS.md through mise exec --yes github:asamarts/alint@latest, matching the stamped mise fragment. It does not require a global alint shim. The prek hook refreshes the block before checks. CI initially failed because the implementation still required a global shim; the generator now bootstraps through the declared tool instead. Full local suite: 114 passed; prek passed.
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
 
 ## Final Summary

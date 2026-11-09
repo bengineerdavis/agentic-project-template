@@ -374,16 +374,15 @@ def _refresh_alint_agents_md(destination: Path) -> None:
     config = destination / ".alint.yml"
     if not config.exists():
         return
-    alint = shutil.which("alint")
-    if alint is None:
-        raise RuntimeError(
-            "alint is enabled but not installed; run `mise install` before stamping"
-        )
+    # Resolve the tool declared by the stamped mise.toml. A global alint shim
+    # is not required, and a newly stamped project's trust prompt is answered
+    # explicitly by mise rather than bypassed.
     subprocess.run(
         [
             "mise",
             "exec",
-            "github:asamarts/alint@0.21.0",
+            "--yes",
+            "github:asamarts/alint@latest",
             "--",
             "alint",
             "export-agents-md",
