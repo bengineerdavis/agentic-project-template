@@ -33,7 +33,10 @@ def repo(tmp_path: Path) -> Path:
     }
     subprocess.run(["git", "init", "-q", str(root)], check=True, env=env)
     subprocess.run(
-        ["git", "-C", str(root), "commit", "-q", "--allow-empty", "-m", "init"],
+        # --no-verify: this repo stamps its own worktree guard, and these
+        # fixtures are scratch repos created from inside an agent session.
+        # The guard is not what is under test here.
+        ["git", "-C", str(root), "commit", "-q", "--no-verify", "--allow-empty", "-m", "init"],
         check=True,
         env=env,
     )
@@ -337,3 +340,142 @@ def test_the_claim_lives_outside_refs_heads_and_notes(repo: Path) -> None:
     assert not any(r.startswith("refs/notes/") for r in owned), (
         "ownership must not collide with the notes namespace"
     )
+
+
+# --- the override, for a session that is alive but stuck -----------------
+
+
+def test_force_is_refused_from_an_agent_session(repo: Path, stub_harness) -> None:
+    """An agent may never take write access from another session.
+
+    Liveness covers a crashed holder. --force exists for one that is ALIVE
+    and stuck, which is a judgement only a person can make -- so the gate is
+    the one signal an agent's tool call cannot produce.
+    """
+    env = stub_harness(live=True)
+    assert run(repo, "claim", "feature/force", "--session", "ses_held", env=env).returncode == 0
+    result = run(
+        repo,
+        "release",
+        "feature/force",
+        "--session",
+        "ses_taker",
+        "--force",
+        "--reason",
+        "stuck",
+        env={**env, "AGENT": "1"},
+    )
+    assert result.returncode != 0
+    assert "agent" in result.stderr.lower(), result.stderr
+    # And the claim is untouched.
+    assert "ses_held" in run(repo, "holder", "feature/force", env=env).stdout
+
+
+def test_force_without_a_reason_is_refused(repo: Path, stub_harness) -> None:
+    """An unreasoned override is indistinguishable from a bug later."""
+    env = stub_harness(live=True)
+    assert run(repo, "claim", "feature/noreason", "--session", "ses_held", env=env).returncode == 0
+    result = run(repo, "release", "feature/noreason", "--session", "ses_taker", "--force", env=env)
+    assert result.returncode != 0
+    assert "reason" in result.stderr.lower(), result.stderr
+
+
+def test_force_without_a_terminal_is_refused(repo: Path, stub_harness) -> None:
+    """Nobody can confirm an override from a non-interactive shell."""
+    env = stub_harness(live=True)
+    assert run(repo, "claim", "feature/notty", "--session", "ses_held", env=env).returncode == 0
+    result = run(
+        repo, "release", "feature/notty", "--session", "ses_taker", "--force", "--reason", "stuck",
+        env=env,
+    )
+    assert result.returncode != 0
+    assert "terminal" in result.stderr.lower(), result.stderr
+
+
+def test_the_refusal_names_the_exact_override_command(repo: Path, stub_harness) -> None:
+    """A refusal that does not say how to proceed just blocks work."""
+    env = stub_harness(live=True)
+    assert run(repo, "claim", "feature/hint", "--session", "ses_held", env=env).returncode == 0
+    result = run(repo, "release", "feature/hint", "--session", "ses_taker", env=env)
+    assert result.returncode != 0
+    assert "--force" in result.stderr and "--reason" in result.stderr, result.stderr
+
+
+# --- the task a branch serves --------------------------------------------
+
+
+def test_a_claim_records_the_task_that_names_the_branch(repo: Path) -> None:
+    """A claim should answer "whose work is this", not only "which session"."""
+    tasks = repo / "tasks"
+    tasks.mkdir(parents=True)
+    (tasks / "dot-42 - Do-the-thing.md").write_text(
+        "---\nid: DOT-42\ntitle: Do the thing\nworktree_branch: feature/tasked\n---\n"
+    )
+    assert run(repo, "claim", "feature/tasked", "--session", "ses_1").returncode == 0
+    holder = run(repo, "holder", "feature/tasked").stdout
+    assert "task:" in holder
+    assert "dot-42" in holder
+
+
+def test_a_claim_works_with_no_backlog_at_all(repo: Path) -> None:
+    """Ownership must not depend on a task tracker being present."""
+    assert not (repo / "tasks").exists()
+    result = run(repo, "claim", "feature/plain", "--session", "ses_1")
+    assert result.returncode == 0, result.stderr
+    assert "task:" not in run(repo, "holder", "feature/plain").stdout
+
+
+def test_an_explicit_task_overrides_the_search(repo: Path) -> None:
+    assert run(repo, "claim", "feature/explicit", "--session", "ses_1", "--task", "DOT-99").returncode == 0
+    assert "DOT-99" in run(repo, "holder", "feature/explicit").stdout
+
+
+# --- coexistence with git notes -----------------------------------------
+
+
+def test_a_notes_writer_leaves_ownership_untouched(repo: Path) -> None:
+    """git-ai (and anything else) writes refs/notes/*; we must be outside it.
+
+    Verified live against git-ai: it installs a pre-commit hook and writes
+    refs/notes/ai. A tool that iterates refs/notes/* therefore never sees
+    refs/wt-owners/*, and a notes rewrite cannot reach a claim. This test
+    pins the namespace boundary mechanically rather than by convention.
+    """
+    import subprocess as sp
+
+    assert run(repo, "claim", "feature/notes", "--session", "ses_1").returncode == 0
+    before = run(repo, "holder", "feature/notes").stdout
+
+    head = sp.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+    sp.run(
+        ["git", "-C", str(repo), "notes", "--ref=ai", "add", "-m", "ai authorship", head],
+        capture_output=True,
+        text=True,
+        check=True,
+        env={**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+             "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"},
+    )
+
+    # Both namespaces exist, separately.
+    refs = sp.run(
+        ["git", "-C", str(repo), "for-each-ref", "--format=%(refname)"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.split()
+    assert any(r.startswith("refs/notes/") for r in refs), "the notes writer did write"
+    assert any(r.startswith("refs/wt-owners/") for r in refs), "the claim survived"
+
+    # And a glob over refs/notes/* cannot see the claim.
+    notes_glob = sp.run(
+        ["git", "-C", str(repo), "for-each-ref", "--format=%(refname)", "refs/notes/"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.split()
+    assert not any("wt-owners" in r for r in notes_glob), (
+        f"a notes-ref sweep must not reach ownership: {notes_glob}"
+    )
+
+    # The claim is byte-identical, not merely present.
+    assert run(repo, "holder", "feature/notes").stdout == before

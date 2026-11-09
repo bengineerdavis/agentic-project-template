@@ -101,11 +101,44 @@ session_is_live() {
   esac
 }
 
+# The task a branch serves, so a claim answers "whose work is this" and not
+# only "which session".
+#
+# Deliberately tracker-agnostic: the directory is configuration, not a
+# hardcoded convention. A repo with no tracker leaves it unset and the field
+# simply stays empty, which is why this module works anywhere.
+WT_TASKS_DIR_DEFAULT="tasks"
+task_for_branch() {
+  local branch="$1" explicit="${2:-}" dir t root
+  if [ -n "$explicit" ]; then
+    printf '%s' "$explicit"
+    return 0
+  fi
+  root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+  [ -n "$root" ] || return 0
+  dir="$root/${WT_TASKS_DIR:-$WT_TASKS_DIR_DEFAULT}"
+  [ -d "$dir" ] || return 0
+  # Match the branch name in the task's frontmatter or body, and print the
+  # file name, which is what a reader opens.
+  t="$(grep -rlF -- "$branch" "$dir" 2>/dev/null | head -1)"
+  [ -n "$t" ] && printf '%s' "$(basename "$t")"
+  return 0
+}
+
 claim_commit() {
   local session="$1" harness="$2" role="$3" branch="$4"
+  local supersedes="${5:-}" reason="${6:-}" task="${7:-}"
   local payload empty_tree
   payload="$(printf 'session: %s\nharness: %s\nrole: %s\nbranch: %s\nclaimed_at: %s\n' \
     "$session" "$harness" "$role" "$branch" "$(date -Iseconds)")"
+  if [ -n "$task" ]; then
+    payload="$(printf '%s\ntask: %s' "$payload" "$task")"
+  fi
+  # Only a forced takeover carries these, so an ordinary claim stays short
+  # and the exceptions are visible as exceptions.
+  if [ -n "$supersedes" ]; then
+    payload="$(printf '%s\nsupersedes: %s\nreason: %s' "$payload" "$supersedes" "$reason")"
+  fi
   empty_tree="$(git hash-object -t tree /dev/null)"
   # A claim is machine state, not a human commit, so it must not inherit the
   # user's identity requirement. Without this, `git commit-tree` fails on any
@@ -129,12 +162,13 @@ field() {
 }
 
 cmd_claim() {
-  local branch="${1:-}" role="writer" session
+  local branch="${1:-}" role="writer" session task_arg=""
   shift || true
   while [ $# -gt 0 ]; do
     case "$1" in
       --role) role="${2:-}"; shift 2 ;;
       --session) session="${2:-}"; shift 2 ;;
+      --task) task_arg="${2:-}"; shift 2 ;;
       *) die "unknown argument: $1" ;;
     esac
   done
@@ -145,7 +179,7 @@ cmd_claim() {
   local ref harness claim payload holder
   ref="$(ref_for "$branch")"
   harness="$(session_harness "$session")"
-  claim="$(claim_commit "$session" "$harness" "$role" "$branch")"
+  claim="$(claim_commit "$session" "$harness" "$role" "$branch" "" "" "$(task_for_branch "$branch" "$task_arg")")"
 
   if git update-ref "$ref" "$claim" "" 2>/dev/null; then
     printf 'claimed %s as %s (%s)\n' "$branch" "$role" "$session"
@@ -186,17 +220,38 @@ cmd_claim() {
   return 1
 }
 
+# A human's terminal, as opposed to an agent's tool call. Same test the
+# commit guard uses: /dev/tty is readable but cannot be opened from a tool
+# call, so a prompt there fails rather than hangs.
+has_terminal() {
+  { exec </dev/tty; } 2>/dev/null || return 1
+  return 0
+}
+
+# An agent must never override the invariant that stops two writers. This is
+# the one escape hatch in the module, so it is gated on the one signal an
+# agent cannot forge from a tool call.
+is_agent_session() {
+  local marker
+  for marker in AGENT AI_AGENT CLAUDE_CODE CURSOR_AGENT; do
+    [ -n "${!marker:-}" ] && return 0
+  done
+  return 1
+}
+
 cmd_release() {
-  local branch="${1:-}" session
+  local branch="${1:-}" session force=0 reason=""
   shift || true
   while [ $# -gt 0 ]; do
     case "$1" in
       --session) session="${2:-}"; shift 2 ;;
+      --force) force=1; shift ;;
+      --reason) reason="${2:-}"; shift 2 ;;
       *) die "unknown argument: $1" ;;
     esac
   done
   session="${session:-$(session_id)}"
-  [ -n "$branch" ] || die "usage: wt-owners release <branch>"
+  [ -n "$branch" ] || die "usage: wt-owners release <branch> [--force --reason TEXT]"
 
   local ref holder holder_session
   ref="$(ref_for "$branch")"
@@ -206,13 +261,51 @@ cmd_release() {
   }
   holder="$(read_claim "$ref")"
   holder_session="$(field "$holder" session)"
-  # Never steal: releasing someone else's claim is a different, explicit act.
-  if [ "$holder_session" != "$session" ]; then
+
+  if [ "$holder_session" = "$session" ]; then
+    git update-ref -d "$ref" "$(git rev-parse "$ref")"
+    printf 'released %s\n' "$branch"
+    return 0
+  fi
+
+  # Not ours. Taking it is an override, and overrides have conditions.
+  if [ "$force" -ne 1 ]; then
     printf 'refusing to release %s: held by %s\n' "$branch" "$holder_session" >&2
+    printf 'If that session is stuck, a human can override:\n' >&2
+    printf '  wt-owners release %s --force --reason "why"\n' "$branch" >&2
     return 1
   fi
-  git update-ref -d "$ref" "$(git rev-parse "$ref")"
-  printf 'released %s\n' "$branch"
+
+  # Liveness already covers a crashed session; --force exists for a session
+  # that is ALIVE and stuck, which is a judgement only a person can make.
+  if is_agent_session; then
+    printf 'refusing --force from an agent session.\n' >&2
+    printf 'An agent may never take write access from another session.\n' >&2
+    printf 'A human must run this, and it needs a terminal.\n' >&2
+    return 1
+  fi
+  if [ -z "$reason" ]; then
+    printf 'refusing --force without --reason.\n' >&2
+    printf 'An unreasoned override is indistinguishable from a bug later.\n' >&2
+    return 1
+  fi
+  if ! has_terminal; then
+    printf 'refusing --force without a terminal: nobody can confirm it.\n' >&2
+    return 1
+  fi
+
+  # Record the takeover on the claim that replaces it, since a custom ref
+  # gets no reflog to carry a message.
+  local claim
+  claim="$(claim_commit "$session" "$(session_harness "$session")" "writer" "$branch" \
+    "$holder_session" "$reason" "$(task_for_branch "$branch")")"
+  if git update-ref "$ref" "$claim" "$(git rev-parse "$ref")"; then
+    printf 'took over %s from %s\n' "$branch" "$holder_session"
+    printf 'reason: %s\n' "$reason"
+    return 0
+  fi
+  printf 'the claim changed while we looked; nothing taken\n' >&2
+  return 1
 }
 
 cmd_holder() {
