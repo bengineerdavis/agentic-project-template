@@ -1,4 +1,5 @@
 import os
+import subprocess
 import tomllib
 from pathlib import Path
 
@@ -48,17 +49,36 @@ def test_consult_llm_is_opt_in_default_off(fresh_stamp: Path) -> None:
 
 
 def test_stamped_project_gets_alint_config(fresh_stamp: Path) -> None:
+    """The layer owns repository structure, not the base's code linting.
+
+    The real hook execution is the integration seam; upstream owns its rule
+    engine and pre-commit protocol.
+    """
     assert "agent-hygiene" in (fresh_stamp / ".alint.yml").read_text()
-    assert 'repo = "https://github.com/asamarts/alint-pre-commit"' in (
-        fresh_stamp / "prek.toml"
-    ).read_text()
-    assert 'rev = "v0.22.0"' in (fresh_stamp / "prek.toml").read_text()
-    assert 'id = "alint"' in (fresh_stamp / "prek.toml").read_text()
-    assert 'id = "alint-check"' not in (fresh_stamp / "prek.toml").read_text()
+    prek = tomllib.loads((fresh_stamp / "prek.toml").read_text())
+    assert any(
+        repo["repo"] == "https://github.com/asamarts/alint-pre-commit"
+        for repo in prek["repos"]
+    )
     agents = (fresh_stamp / "agents.toml").read_text()
     assert 'name = "structure-authoring"' in agents
     assert 'name = "aboyeur"' in agents
-    assert agents.count('source = "bengineerdavis/ai-prompt-library"') == 4
+
+
+def test_stamped_alint_hook_runs_through_prek(tmp_path: Path) -> None:
+    """The official hook runs in a fresh Git-backed composed project."""
+    destination = tmp_path / "stamped"
+    destination.mkdir()
+    _stamp(destination)
+    subprocess.run(["git", "init", "-q"], cwd=destination, check=True)
+    result = subprocess.run(
+        ["uv", "run", "--with", "prek", "prek", "run", "alint", "--all-files"],
+        cwd=destination,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_stamped_project_gets_context_ai_rules(fresh_stamp: Path) -> None:

@@ -23,7 +23,9 @@ Declare structure-authoring and aboyeur from bengineerdavis/ai-prompt-library in
 ## Implementation Notes
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
-2026-11-09: agentic-project-template draft PR #11. 113 tests passed; fresh stamp executed the official mirror and declared structure-authoring and aboyeur. Library eval execution remains blocked by provider authentication.
+2026-11-09: agentic-project-template draft PR #11. 114 tests passed, including a real prek hook run in a fresh Git-backed stamp. The simplified tests follow the meta-template decision-1: test the contract we own, not the dependency.
+
+Integration verification: a fresh project must be a Git repository before dotagents resolves its own agents.toml rather than the parent worktree. With git init, three existing library skills install successfully. structure-authoring exists at ai-prompt-library PR #2 head 1acc258 but not yet on library main, so its fresh install fails until that PR merges. This acceptance criterion remains open; do not mark the task complete yet. CTCT-14 records the post-stamp repository-initialization workflow.
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
 
 ## Final Summary
