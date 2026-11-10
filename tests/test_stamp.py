@@ -49,6 +49,16 @@ def test_consult_llm_is_opt_in_default_off(fresh_stamp: Path) -> None:
 
 def test_stamped_project_gets_alint_config(fresh_stamp: Path) -> None:
     assert "agent-hygiene" in (fresh_stamp / ".alint.yml").read_text()
+    assert 'repo = "https://github.com/asamarts/alint-pre-commit"' in (
+        fresh_stamp / "prek.toml"
+    ).read_text()
+    assert 'rev = "v0.22.0"' in (fresh_stamp / "prek.toml").read_text()
+    assert 'id = "alint"' in (fresh_stamp / "prek.toml").read_text()
+    assert 'id = "alint-check"' not in (fresh_stamp / "prek.toml").read_text()
+    agents = (fresh_stamp / "agents.toml").read_text()
+    assert 'name = "structure-authoring"' in agents
+    assert 'name = "aboyeur"' in agents
+    assert agents.count('source = "bengineerdavis/ai-prompt-library"') == 4
 
 
 def test_stamped_project_gets_context_ai_rules(fresh_stamp: Path) -> None:
@@ -296,7 +306,8 @@ def test_stamp_merges_fragments_in_declared_order(tmp_path: Path) -> None:
     # first, before any linter runs.
     assert repos[0] == "local", f"declared order puts worktrunk's local first, got {repos}"
     assert "tombi" in repos[1], f"tombi follows worktrunk, got {repos}"
-    assert repos[2] == "local"  # alint-check follows tombi
+    assert repos[2] == "https://github.com/asamarts/alint-pre-commit"
+    assert repos[3] == "local"  # alint instruction refresh follows the check
 
     agents_md = (dst / "AGENTS.md").read_text()
     positions = {

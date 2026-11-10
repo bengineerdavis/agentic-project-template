@@ -7,13 +7,24 @@
 # newlines, and merge markers (spec: Enforcement — checkers do not overlap).
 # Language linters for code come from the base template, not from this layer.
 
+# Official mirror supplies a prebuilt hook binary. The mise-managed CLI
+# remains available for `mise run check` and `alint lsp`.
+[[repos]]
+repo = "https://github.com/asamarts/alint-pre-commit"
+rev = "v0.22.0"
+
+[[repos.hooks]]
+id = "alint"
+
+# Refresh generated instructions only when their owning rules change.
 [[repos]]
 repo = "local"
 
 [[repos.hooks]]
-id = "alint-check"
-name = "alint check"
-entry = "alint check"
+id = "alint-agents-md"
+name = "alint AGENTS.md"
+entry = "alint export-agents-md --inline --output AGENTS.md"
 language = "system"
 pass_filenames = false
 always_run = true
+files = '^\\.alint\\.yml$'
