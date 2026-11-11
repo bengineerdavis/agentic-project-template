@@ -20,7 +20,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: install mise
         # mise is installed as a plain binary (not an action), so the only
