@@ -8,6 +8,26 @@
 [tools]
 "npm:@sentry/dotagents" = "latest"
 
+[tasks.dotagents-add]
+description = "Refresh reviewed external dependency catalogs and project them"
+# Make the reviewed shared workflow source an explicit, repeatable dependency
+# refresh. `install` only consumes the resolved state; native marketplace
+# registration for other clients stays in the dotfiles client installer.
+run = '''
+# Add requires project-scoped trust; later projection also reads user-scoped
+# trust. `trust add` rejects an already-trusted source, so check each scope.
+# Only these reviewed sources are trusted; other installer failures still stop.
+for source in mattpocock/skills bengineerdavis/ai-prompt-library; do
+  grep -Fq "\"$source\"" agents.toml ||
+    dotagents --project trust add "$source"
+  grep -Fq "\"$source\"" "${DOTAGENTS_HOME:-$HOME/.agents}/agents.toml" ||
+    dotagents --user trust add "$source"
+done
+dotagents --project add mattpocock/skills --all
+dotagents --project install
+'''
+
 [tasks.dotagents-install]
-description = "Refresh dotagents managed state (skills, MCP, subagents)"
+description = "Install dependencies already declared in project agents.toml"
+# Intentionally no implicit source refresh: this is the pure install path.
 run = "dotagents --project install"
