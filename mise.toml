@@ -5,7 +5,7 @@
 
 [tools]
 uv = "latest"
-python = "3.12"
+python = "3.14"  # apt-34: floating minor pin; .python-version pins uv's resolution
 prek = "0.5.2"
 tombi = "1.5.5"
 copier = "9.18.2"
