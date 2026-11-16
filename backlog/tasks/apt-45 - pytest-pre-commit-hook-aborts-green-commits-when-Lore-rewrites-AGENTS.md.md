@@ -50,21 +50,31 @@ the Lore section being re-appended).
 ## Implementation Notes
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
-Candidate directions, in rough order of preference — decide at implementation
-time, not here:
+**Approach (approved 2026-11-15): Direction 1 as the core, Direction 3 as the
+delivery vehicle.** The session evidence is decisive:
 
-1. **Keep the section stable + hook ignores the Lore write.** If AGENTS.md's
-   Lore section is committed and current, Lore does not rewrite it. Pair with a
-   hook that tolerates an agent-side AGENTS.md touch (e.g. the pytest hook
-   runs with the Lore write suppressed, or the section is restored before the
-   stash-restore diff is taken).
-2. **Stamp a per-project `.lore.json`** scoping what Lore writes during
-   automated runs, so a headless `pytest` invocation does not trigger an
-   AGENTS.md sync. Requires confirming Lore honors a "no agentsFile write in
-   non-interactive runs" knob — verify against installed lore, not the README.
-3. **Template ships the pytest hook itself**, pre-configured to coexist with
-   the Lore write, so children inherit a working combination instead of each
-   rediscovering the trap.
+- **Direction 1 is the fix.** The support repo's `verify` work (PR #6) ran in a
+  clean, dedicated worktree with the Lore section of AGENTS.md committed
+  (`d13fce8`) — **zero** commit aborts across every commit. The shared main
+  checkout (uncommitted Lore churn) hit **4+** aborts across the same arc. When
+  the section is committed and current, Lore does not rewrite it mid-run. So:
+  commit the Lore section stable, and make the hook tolerate an agent-side
+  AGENTS.md touch (restore/stabilize the section before the stash-restore diff,
+  or run with the write suppressed).
+- **Direction 3 ships it to children.** The template stamps the Lore section
+  into every child's AGENTS.md but ships no pytest hook, so the first child to
+  add a full-suite pytest hook rediscovers the trap (the support repo is the
+  proof case). Ship a template pytest hook **pre-configured to coexist** with
+  the Lore write, so children inherit a working combination.
+- **Direction 2 skipped for now.** It rests on an unverified Lore config knob
+  ("no agentsFile write in non-interactive runs"); the support repo has no
+  `.lore.json` at all. Revisit only if Direction 1 proves insufficient against
+  a Lore build that rewrites even committed sections.
+
+**Open question to verify at build time** (Direction 1's own caution): does
+installed Lore skip rewriting a section whose content is already current? The
+`d13fce8` + verify-worktree evidence says yes; a one-line probe against the
+installed Lore build settles it rather than inferring.
 
 Related: APT-41 (.lore.md sync across machines) is a different concern — that
 is about the knowledge file, this is about the AGENTS.md pointer section
