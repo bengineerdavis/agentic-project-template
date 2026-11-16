@@ -1,5 +1,5 @@
 ---
-id: APT-32
+id: APT-46
 title: Enforce the worktree rule at commit time, not just in prose
 status: To Do
 created_date: 2026-11-06 10:30
