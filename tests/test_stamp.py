@@ -170,6 +170,28 @@ def test_stamped_agents_md_carries_managed_section(fresh_stamp: Path) -> None:
     assert "mise run review-deep" in agents_md
 
 
+def test_alint_instructions_are_generated_and_refreshed(tmp_path: Path) -> None:
+    """APT-42: the generated block tracks active rules, not other file prose."""
+    destination = tmp_path / "stamped"
+    destination.mkdir()
+    _stamp(destination)
+    agents = destination / "AGENTS.md"
+    assert agents.read_text().count("<!-- alint:start -->") == 1
+    agents.write_text(agents.read_text() + "\nProject-owned prose survives.\n")
+
+    config = destination / ".alint.yml"
+    config.write_text(
+        config.read_text()
+        + '\nrules:\n  - id: custom-skill-structure\n    kind: dir_contains\n    select: "skills/*"\n    require: ["spec.md"]\n    level: error\n'
+    )
+    apply_fragments(destination)
+    updated = agents.read_text()
+    assert "custom-skill-structure" in updated
+    assert updated.count("<!-- alint:start -->") == 1
+    assert "BEGIN managed: overlay" in updated
+    assert "Project-owned prose survives." in updated
+
+
 @pytest.mark.parametrize("doc", ["issue-tracker", "triage-labels", "domain"])
 def test_stamped_project_gets_agent_doc(fresh_stamp: Path, doc: str) -> None:
     assert (fresh_stamp / "docs" / "agents" / f"{doc}.md").exists()
@@ -289,14 +311,11 @@ def test_stamp_merges_fragments_in_declared_order(tmp_path: Path) -> None:
 
     prek = tomllib.loads((dst / "prek.toml").read_text())["repos"]
     repos = [entry["repo"] for entry in prek]
-    # APT-32 added a second `local` repo (the worktree guard, from the
-    # worktrunk fragment). The merge keys on (repo, hook ids), so the two
-    # local repos coexist instead of collapsing. worktrunk is declared
-    # before tombi, so the guard's local entry leads — cheapest check
-    # first, before any linter runs.
+    # APT-42 only owns the instruction refresh's deterministic position after
+    # tombi; the official alint hook belongs to APT-43's integration contract.
     assert repos[0] == "local", f"declared order puts worktrunk's local first, got {repos}"
     assert "tombi" in repos[1], f"tombi follows worktrunk, got {repos}"
-    assert repos[2] == "local"  # alint-check follows tombi
+    assert repos[2] == "local"
 
     agents_md = (dst / "AGENTS.md").read_text()
     positions = {

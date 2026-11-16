@@ -12,6 +12,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import tempfile
 import tomllib
 from pathlib import Path
@@ -264,6 +265,7 @@ def apply_fragments(destination: Path) -> list[str]:
         destination / "AGENTS.md",
         _compose_agents_md_section(fragments, backlog_on),
     )
+    _refresh_alint_agents_md(destination)
 
     # T2: the file is layered, one block per rank. The base creates it and owns
     # the vacuity-guard rule (a statement about tests, not agents); the meta
@@ -365,6 +367,32 @@ def _merge_mise(
         warnings.extend(merge_mise_fragment(mise_target, tomllib.loads(mise_text)))
     else:
         mise_target.write_text(mise_text, encoding="utf-8")
+
+
+def _refresh_alint_agents_md(destination: Path) -> None:
+    """Generate the instructions for the rules the project actually enforces."""
+    config = destination / ".alint.yml"
+    if not config.exists():
+        return
+    # Resolve the tool declared by the stamped mise.toml. A global alint shim
+    # is not required, and a newly stamped project's trust prompt is answered
+    # explicitly by mise rather than bypassed.
+    subprocess.run(
+        [
+            "mise",
+            "exec",
+            "--yes",
+            "github:asamarts/alint@latest",
+            "--",
+            "alint",
+            "export-agents-md",
+            "--inline",
+            "--output",
+            "AGENTS.md",
+        ],
+        cwd=destination,
+        check=True,
+    )
 
 
 def _compose_agents_md_section(fragments: Path, backlog_on: bool) -> str:

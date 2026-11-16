@@ -11,6 +11,14 @@
 repo = "local"
 
 [[repos.hooks]]
+id = "alint-agents-md"
+name = "alint AGENTS.md"
+entry = "alint export-agents-md --inline --output AGENTS.md"
+language = "system"
+pass_filenames = false
+always_run = true
+
+[[repos.hooks]]
 id = "alint-check"
 name = "alint check"
 entry = "alint check"
