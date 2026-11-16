@@ -1,9 +1,9 @@
 ---
 id: APT-54
 title: Reconcile stale local task records and duplicate IDs
-status: To Do
+status: Done
 created_date: 2026-11-16 01:04
-updated_date: 2026-11-16 01:07
+updated_date: 2026-11-16 01:10
 ---
 
 ## Description
@@ -26,10 +26,10 @@ Constraints:
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The shared main checkout resolves exactly one record for each task ID without duplicate-ID warnings
-- [ ] #2 Every superseded local record is compared with its canonical record and unique evidence is preserved
-- [ ] #3 Other sessions’ APT-46 and unrelated working-tree changes remain intact or explicitly owned through a preservation handoff
-- [ ] #4 The reconciliation outcome and remaining owners are recorded through backlog-py
+- [x] #1 The shared main checkout resolves exactly one record for each task ID without duplicate-ID warnings
+- [x] #2 Every superseded local record is compared with its canonical record and unique evidence is preserved
+- [x] #3 Other sessions’ APT-46 and unrelated working-tree changes remain intact or explicitly owned through a preservation handoff
+- [x] #4 The reconciliation outcome and remaining owners are recorded through backlog-py
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -51,7 +51,7 @@ Verification requirement: after the owning workstream reconciles main, run backl
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-
+Resolved canonical APT-46/APT-32 metadata collision in PR #25 and reconciled the shared main checkout to origin/main. Removed only compared superseded local task records; APT-52/53 copies were byte-identical. Preserved .lore.md, .agent-budget.toml, draft-2, APT-47, and APT-48. The earlier local .roborev.toml differed from canonical only in quote style; its preserved copy is in the approved temporary directory. backlog-py doctor --json now reports duplicateIds: [], ok: true; all affected task IDs resolve through Backlog.
 <!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
