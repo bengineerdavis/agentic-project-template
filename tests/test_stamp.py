@@ -189,6 +189,21 @@ def test_stamped_agents_md_links_backlog_docs(fresh_stamp: Path) -> None:
     assert "backlog-workflow" in agents_md
 
 
+def test_stamp_propagates_dependency_testing_boundary(tmp_path: Path) -> None:
+    """The shared principle reaches children without owning their prose."""
+    destination = tmp_path / "stamped"
+    destination.mkdir()
+    _stamp(destination)
+    standards = destination / "CODING_STANDARDS.md"
+    assert "Test the contract you own, not the dependency" in standards.read_text()
+    standards.write_text(standards.read_text() + "\nProject-specific testing rule.\n")
+
+    _stamp(destination)
+    updated = standards.read_text()
+    assert updated.count("Test the contract you own, not the dependency") == 1
+    assert "Project-specific testing rule." in updated
+
+
 def test_layer_stamp_existing_project_preserves_base(tmp_path: Path) -> None:
     dst = tmp_path / "existing"
     dst.mkdir()
