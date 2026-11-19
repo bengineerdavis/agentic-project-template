@@ -1,14 +1,12 @@
 ---
 id: APT-48
 title: Declare the ADHD ideation skill in stamped projects
-status: Done
+status: To Do
 created_date: 2026-11-12 21:11
-updated_date: 2026-11-19 21:25
+updated_date: 2026-11-12 21:11
 orchestration:
-  status_key: inprogress
-  lease_owner: opencode-apt-48-adhd-skill
-  lease_expires_at: '2026-11-19T21:45:41.597008Z'
-  version: 1
+  status_key: todo
+  version: 2
 ---
 
 ## Description
@@ -37,27 +35,24 @@ Agreed with the maintainer 2026-11-12: declared by default, explicit invocation 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [x] #1 template/agents.toml.jinja declares UditAkhourii/adhd as a plugin source
-- [x] #2 fragments/tools/dotagents/mise.toml trusts UditAkhourii/adhd in both scopes and adds it in dotagents-add
-- [x] #3 The stamped AGENTS.md names /adhd as explicit invocation for open-ended design work and does not claim auto-trigger
-- [x] #4 A stamp test fails before the change and asserts the declaration and trust entry in a stamped child afterward
-- [x] #5 merge.py maps the prior dotagents-add body so an existing project picks up the new source on update
-- [x] #6 mise run test and mise run check pass; outcomes reported exactly
+- [ ] #1 template/agents.toml.jinja declares UditAkhourii/adhd as a plugin source
+- [ ] #2 fragments/tools/dotagents/mise.toml trusts UditAkhourii/adhd in both scopes and adds it in dotagents-add
+- [ ] #3 The stamped AGENTS.md names /adhd as explicit invocation for open-ended design work and does not claim auto-trigger
+- [ ] #4 A stamp test fails before the change and asserts the declaration and trust entry in a stamped child afterward
+- [ ] #5 merge.py maps the prior dotagents-add body so an existing project picks up the new source on update
+- [ ] #6 mise run test and mise run check pass; outcomes reported exactly
 <!-- AC:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
-2026-11-19: Implemented in worktree /Users/ben.davis/code/personal/templates/agentic-project-template/.worktrees/apt-48-adhd-skill-v2 on branch apt-48-adhd-skill-v2, based on APT-47 0781de2. Files owned by this slice: template/agents.toml.jinja, fragments/tools/dotagents/{mise.toml,agents.md}, src/agentic_project_template/merge.py, tests/test_dotagents_projection.py. RED: initial focused test failed because ADHD was not declared. GREEN: 4 focused tests passed including migration tripwire; full mise run test 116 passed, 17 Copier dirty-worktree warnings; mise run lint all prek hooks passed. Real fresh-user dotagents refresh ran twice, projecting adhd, tdd, grilling, writing-for-agents. Discovered and fixed refresh failure removing existing manifest declarations; synthetic stub proves failed ADHD refresh restores existing manifest and exits nonzero. Stamp matrix: pending.
-Stamp matrix first attempt after the 116-test suite failed in its update fixture: Copier run_update could not resolve uncommitted-template pathspec 2184a76. This is not reported as a passing matrix; rerun after committing implementation to provide durable provenance.
-Wrap-up resume and ownership: implementation commit e8ae66d; retrospective commit 237c0ea; parent PR #17 merged as d8d3bf1. Worktree /Users/ben.davis/code/personal/templates/agentic-project-template/.worktrees/apt-48-adhd-skill-v2; branch apt-48-adhd-skill-v2. Untracked .pr-body.md is publication metadata, not implementation. All six APT-48 acceptance criteria are satisfied; remaining cleanup is limited to confirmed merged owned worktrees. APT-57 is the new stale-worktree environment follow-up; it is not started.
-Final wrap-up: owned orchestration lease released via run-bb06788dd8524fe487887221e5909535. Implementation worktrees and remote branches apt-47-dotagents-projection and apt-48-adhd-skill-v2 retired after confirmed merge. Foreign main-checkout mise.toml, opencode.json, .agent-budget.toml, draft-2, APT-55, and scripts/backlog-mcp.sh remain untouched. Local-only superseded queue commit 0b6917a remains in main checkout history and is intentionally not pushed; final records are c806d18 and aaa26f4 on origin/main.
+
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-Merged PR #26 as 953ae230b3b7cb4ed144843ba467cc16689bb965 on 2026-11-19. ADHD is declared and documented for explicit /adhd invocation only. Full current-main verification: 116 tests passed, all prek hooks passed, stamp matrix passed. Real fresh-user projection included adhd, tdd, grilling, writing-for-agents. Failed catalog refresh now restores agents.toml.
+
 <!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
@@ -78,6 +73,18 @@ from_status: todo
 to_status: inprogress
 metadata:
   lease_ttl_seconds: '3600'
+```
+<!-- RUN_HISTORY_ENTRY:END -->
+<!-- RUN_HISTORY_ENTRY:BEGIN -->
+```yaml
+event_id: run-bb06788dd8524fe487887221e5909535
+type: release_task
+actor: opencode-apt-48-adhd-skill
+timestamp: '2026-11-19T21:24:49.802202Z'
+result: succeeded
+task_id: APT-48
+from_status: inprogress
+to_status: todo
 ```
 <!-- RUN_HISTORY_ENTRY:END -->
 <!-- SECTION:RUN_HISTORY:END -->
