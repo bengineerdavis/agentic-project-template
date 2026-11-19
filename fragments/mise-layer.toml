@@ -23,6 +23,7 @@ if [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then
 fi
 mise install prek tombi "http:opencode" "github:asamarts/alint" "npm:pyright"
 mise install "npm:@sentry/dotagents"
+mise run dotagents-add
 dotagents --project install
 prek install --force
 mise install "github:kenn-io/roborev" >/dev/null 2>&1 || echo "warn: roborev install failed (github:kenn-io/roborev — continuing without it)" >&2

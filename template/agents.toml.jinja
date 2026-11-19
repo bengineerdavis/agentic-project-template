@@ -10,6 +10,12 @@ source = "bengineerdavis/ai-prompt-library"
 name = "review-best-practices"
 source = "bengineerdavis/ai-prompt-library"
 
+# Shared workflows. The dotagents-add mise task refreshes this reviewed source
+# before install; an ordinary install does not retrieve a newly declared catalog.
+[[plugins]]
+name = "mattpocock-skills"
+source = "mattpocock/skills"
+
 {% if include_backlog %}
 # The queue's agent surface. backlog-md-py is the L5 task store, so its MCP
 # server is declared by default; `mise run dotagents-install` wires it.
