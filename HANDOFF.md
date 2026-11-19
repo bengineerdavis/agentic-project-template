@@ -269,3 +269,64 @@ end-to-end (apt-21's test). In order:
 - `../copier-template-copier-template` — customized fork (mise + SPDX/
   BlueOak/FSL licensing); the make-a-template base for this family.
 - `../copier-mise-sandbox` — absorbed substrate; becomes a consumer.
+
+## Retrospective — dotagents projection session (2026-11-19)
+
+### Delivered
+
+APT-47 adds the reviewed Matt Pocock plugin declaration, a repeatable source
+refresh, and the existing pure dotagents install path. Its real fresh-user
+projection test proves `tdd`, `grilling`, and `writing-for-agents` appear in
+OpenCode's project projection. The template development harness now declares
+dotagents too, fixing the first CI failure.
+
+The meta-template child consumes the composed change while preserving its
+custom bootstrap and unrelated backlog/lore/worktree choices. A broad update
+attempt conflicted in `agents.toml`, `.lore.md`, and `docs/experiments.md`;
+that attempt was abandoned, not presented as successful propagation. CTCT-13
+and APT-55 own the broader update/migration problem.
+
+### Corrections and limits
+
+- `dotagents-add` refreshes reviewed external sources and projects them;
+  `dotagents-install` only installs dependencies already declared. Both run in
+  project scope. This is not a global/project or optional/required split.
+- Source trust is needed in project scope for `add` and user scope for later
+  projection. Repeating `trust add` fails, so the refresh checks each scope's
+  manifest before adding it.
+- Upstream's malformed `software-factory` frontmatter is not repaired here;
+  the other 38 Matt Pocock skills project. Native Claude/Codex activation and
+  unsupported VS Code output are outside this change.
+- APT-48 was claimed but its implementation had not started when wrap-up
+  began. No ADHD declaration, projection, or test result is claimed yet.
+- Other open PRs and dirty main-checkout files have no verified ownership in
+  this session. They are not merge or cleanup candidates here.
+
+### Environment and process lessons
+
+- The repository moved from `code/templates/` to `code/personal/templates/`.
+  Git still registered old worktree paths. New worktree names avoid pruning or
+  overwriting those records; stale registered paths are not evidence that work
+  is gone.
+- A moved worktree can leave `.venv/bin/*` shebangs pointing at the old path.
+  Rebuild the venv before calling tests unrun. **APT-57** records this new
+  preflight follow-up, including the moved mise trust probe.
+- Main contains foreign `mise.toml`, `opencode.json`, `.agent-budget.toml`,
+  draft/task records, and `scripts/backlog-mcp.sh`. They remain untouched;
+  they are not inputs to this session's tests or commits.
+- PR readiness needs review as well as green checks. The earlier quiz answer
+  "I don't remember; review them now" correctly stopped a premature merge.
+  The contract is now reviewed above; it is not evidence that every older PR
+  is owned or ready.
+
+### Resume points
+
+- APT-47: `36dc1cf` and `0781de2`, PR #17. Recheck its diff against current
+  main and run the suite/lint before merging; old CI success alone is not a
+  current verification result.
+- APT-48: worktree `.worktrees/apt-48-adhd-skill-v2`, branch
+  `apt-48-adhd-skill-v2`, based on `0781de2`. Its task record is the source of
+  truth for remaining implementation and verification.
+- CTCT-15: scoped child PR #3 is published. Do not merge it before its APT-47
+  parent or resurrect the discarded broad update. Its own task record owns
+  child-specific handoff and final merge evidence.

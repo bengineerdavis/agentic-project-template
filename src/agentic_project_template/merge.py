@@ -42,15 +42,10 @@ def managed_block(writer: str, section: str) -> str:
     """Render one writer's block, markers included."""
     if writer not in WRITER_MARKERS:
         raise ValueError(
-            f"unknown writer {writer!r}: expected one of "
-            f"{sorted(WRITER_MARKERS)}"
+            f"unknown writer {writer!r}: expected one of {sorted(WRITER_MARKERS)}"
         )
     body = section.strip()
-    return (
-        f"<!-- BEGIN managed: {writer} -->\n"
-        f"{body}\n"
-        f"<!-- END managed: {writer} -->"
-    )
+    return f"<!-- BEGIN managed: {writer} -->\n{body}\n<!-- END managed: {writer} -->"
 
 
 def _split_blocks(text: str) -> tuple[str, list[tuple[str, str]]]:
@@ -63,11 +58,11 @@ def _split_blocks(text: str) -> tuple[str, list[tuple[str, str]]]:
     legacy = MARKED_SECTION_RE.search(text)
     if legacy:
         inner = legacy.group(0)
-        body = inner[len(MARKER_BEGIN): -len(MARKER_END)].strip("\n")
+        body = inner[len(MARKER_BEGIN) : -len(MARKER_END)].strip("\n")
         text = (
             text[: legacy.start()]
             + f"<!-- BEGIN managed: overlay -->\n{body}\n<!-- END managed: overlay -->\n"
-            + text[legacy.end():]
+            + text[legacy.end() :]
         )
 
     blocks: dict[str, str] = {}
@@ -90,7 +85,6 @@ def _render(prose: str, blocks: dict[str, str]) -> str:
     if not prose.strip():
         return trailing + "\n"
     return prose.rstrip("\n") + "\n\n" + trailing + "\n"
-
 
 
 def load_toml(path: Path) -> dict[str, Any]:
@@ -231,36 +225,28 @@ def merge_mise_fragment(destination: Path, overlay_doc: dict) -> list[str]:
 # content — the same provenance argument as the legacy registry-pin removal.
 _LAYER_AUTHORED_SCRIPTS: frozenset[str] = frozenset(
     {
+        # 36dc1cf (fresh-user trust fix, before ADHD and refresh rollback)
+        '# Add requires project-scoped trust; later projection also reads user-scoped\n# trust. `trust add` rejects an already-trusted source, so check each scope.\n# Only these reviewed sources are trusted; other installer failures still stop.\nfor source in mattpocock/skills bengineerdavis/ai-prompt-library; do\n  grep -Fq "\\"$source\\"" agents.toml ||\n    dotagents --project trust add "$source"\n  grep -Fq "\\"$source\\"" "${DOTAGENTS_HOME:-$HOME/.agents}/agents.toml" ||\n    dotagents --user trust add "$source"\ndone\ndotagents --project add mattpocock/skills --all\ndotagents --project install\n',
         # 0b6d651 (first published refresh before the fresh-user trust fix)
-        'dotagents --project trust add mattpocock/skills\ndotagents --project add mattpocock/skills --all\ndotagents --project install\n',
-
+        "dotagents --project trust add mattpocock/skills\ndotagents --project add mattpocock/skills --all\ndotagents --project install\n",
         # f2a84f1 (previous stamped bootstrap before APT-47 source refresh)
         '#!/usr/bin/env bash\nset -euo pipefail\n: "${TMPDIR:=/tmp}"\nif [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n  exit 1\nfi\nmise install prek tombi "http:opencode" "github:asamarts/alint" "npm:pyright"\nmise install "npm:@sentry/dotagents"\ndotagents --project install\nprek install --force\nmise install "github:kenn-io/roborev" >/dev/null 2>&1 || echo "warn: roborev install failed (github:kenn-io/roborev — continuing without it)" >&2\nif command -v roborev >/dev/null 2>&1; then\n  if ! roborev init; then\n    echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\n  fi\nelse\n  echo "warn: roborev init skipped (binary absent — install failed this run or is not on PATH)" >&2\nfi\nmise run backlog-init\n',
-
         # 02a0191 (fix: roborev review findings on fc2c5e4 (apt-22))
         '#!/usr/bin/env bash\nset -euo pipefail\n: "${TMPDIR:=/tmp}"\nif [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n  exit 1\nfi\nmise install prek tombi "http:opencode" "github:asamarts/alint" "npm:pyright"\nmise install "npm:@sentry/dotagents"\ndotagents --project install\nprek install --force\nroborev_installed=1\nif ! mise install "github:kenn-io/roborev"; then\n  roborev_installed=0\n  echo "warn: roborev install failed (github:kenn-io/roborev — continuing without it)" >&2\nfi\nif ! roborev init; then\n  if [ "$roborev_installed" -eq 0 ]; then\n    echo "warn: roborev init failed (binary absent — install failed)" >&2\n  else\n    echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\n  fi\nfi\nmise run backlog-init\n',
-
         # 0ecccee (template: drop the internal apt-22 comment from the stamped section)
         '#!/usr/bin/env bash\nset -euo pipefail\n: "${TMPDIR:=/tmp}"\nif [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n  exit 1\nfi\nmise install prek tombi "http:opencode" "github:asamarts/alint" "npm:pyright"\nmise install "npm:@sentry/dotagents"\ndotagents --project install\nprek install --force\nif ! mise install "github:kenn-io/roborev"; then\n  echo "warn: roborev install failed (github:kenn-io/roborev — continuing without it)" >&2\nfi\nif ! roborev init; then\n  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\nfi\nmise run backlog-init\n',
-
         # 4aa50b3 (Merge apt-24 backlog workflow into apt-22 per-tool fragments)
         '#!/usr/bin/env bash\nset -euo pipefail\n: "${TMPDIR:=/tmp}"\nif [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n  exit 1\nfi\nmise install prek tombi "http:opencode" "github:asamarts/alint"\nmise install "npm:@sentry/dotagents"\ndotagents --project install\nprek install --force\nif ! mise install "github:kenn-io/roborev"; then\n  echo "warn: roborev install failed (github:kenn-io/roborev — continuing without it)" >&2\nfi\nif ! roborev init; then\n  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\nfi\nmise run backlog-init\n',
-
         # 93bdec6 (fix: install alint in the stamped bootstrap)
         '#!/usr/bin/env bash\nset -euo pipefail\n: "${TMPDIR:=/tmp}"\nif [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n  exit 1\nfi\nmise install prek tombi opencode "github:asamarts/alint"\nmise install "npm:@sentry/dotagents"\ndotagents --project install\nprek install --force\nif ! mise install "github:kenn-io/roborev"; then\n  echo "warn: roborev install failed (github:kenn-io/roborev — continuing without it)" >&2\nfi\nif ! roborev init; then\n  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\nfi\nmise run backlog-init\n',
-
         # ffcb4d5 (fix: ignore dotagents artifacts in stamped projects)
         '#!/usr/bin/env bash\nset -euo pipefail\n: "${TMPDIR:=/tmp}"\nif [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n  exit 1\nfi\nmise install prek tombi opencode\nmise install "npm:@sentry/dotagents"\ndotagents --project install\nprek install --force\nif ! mise install "github:kenn-io/roborev"; then\n  echo "warn: roborev install failed (backend unverified)" >&2\nfi\nif ! roborev init; then\n  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\nfi\nmise run backlog-init\n',
-
         # 93f10df (fix: make the stamped task-id prefix a template question)
         '#!/usr/bin/env bash\nset -euo pipefail\n: "${TMPDIR:=/tmp}"\nif [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n  exit 1\nfi\nmise install prek tombi opencode alint dotagents\ndotagents --project install\nprek install --force\nif ! mise install roborev; then\n  echo "warn: roborev install failed (backend unverified)" >&2\nfi\nif ! roborev init; then\n  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\nfi\nmise run backlog-init\n',
-
         # a454d02 (Preflight the aube lock dir in install tasks (detection layer))
         '#!/usr/bin/env bash\nset -euo pipefail\n: "${TMPDIR:=/tmp}"\nif [ -d "$TMPDIR/fslock" ] && [ ! -w "$TMPDIR/fslock" ]; then\n  echo "ERROR: $TMPDIR/fslock is not writable by $(whoami) — aube (mise npm backend) will fail to lock." >&2\n  echo "  fix: sudo chown -R \\"$(id -un):$(id -gn)\\" \\"$TMPDIR/fslock\\"   # or: export TMPDIR=<user-owned dir>" >&2\n  exit 1\nfi\nmise install prek tombi opencode alint dotagents\ndotagents --project install\nprek install --force\nif ! mise install roborev; then\n  echo "warn: roborev install failed (backend unverified — backlog task apt-3)" >&2\nfi\nif ! roborev init; then\n  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\nfi\nmise run backlog-init\n',
-
         # 23f8862 (Stamp worktrunk wiring into projects (apt-13))
         '#!/usr/bin/env bash\nset -euo pipefail\nmise install prek tombi opencode alint dotagents\ndotagents --project install\nprek install --force\nif ! mise install roborev; then\n  echo "warn: roborev install failed (backend unverified — backlog task apt-3)" >&2\nfi\nif ! roborev init; then\n  echo "warn: roborev init failed (no git repo yet, or daemon unavailable)" >&2\nfi\nmise run backlog-init\n',
-
     }
 )
 
@@ -341,11 +327,7 @@ def append_gitignore_lines(destination: Path, lines: list[str]) -> None:
             line.strip()
             for line in destination.read_text(encoding="utf-8").splitlines()
         }
-    missing = [
-        line
-        for line in lines
-        if line.strip() and line.strip() not in existing
-    ]
+    missing = [line for line in lines if line.strip() and line.strip() not in existing]
     if not missing:
         return
     with destination.open("a", encoding="utf-8") as fh:
@@ -379,8 +361,7 @@ def remove_managed_section(destination: Path, writer: str) -> None:
     """Drop one writer's block; delete the file if nothing else remains."""
     if writer not in WRITER_MARKERS:
         raise ValueError(
-            f"unknown writer {writer!r}: expected one of "
-            f"{sorted(WRITER_MARKERS)}"
+            f"unknown writer {writer!r}: expected one of {sorted(WRITER_MARKERS)}"
         )
     if not destination.exists():
         return
@@ -393,13 +374,10 @@ def remove_managed_section(destination: Path, writer: str) -> None:
     destination.write_text(_render(prose, remaining), encoding="utf-8")
 
 
-
 def merge_json_file(destination: Path, overlay: dict) -> list[str]:
     base = {}
     if destination.exists():
         base = json.loads(destination.read_text(encoding="utf-8"))
     merged, warnings = deep_merge(base, overlay)
-    destination.write_text(
-        json.dumps(merged, indent=2) + "\n", encoding="utf-8"
-    )
+    destination.write_text(json.dumps(merged, indent=2) + "\n", encoding="utf-8")
     return warnings
