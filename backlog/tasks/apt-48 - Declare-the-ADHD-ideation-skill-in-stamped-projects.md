@@ -1,9 +1,9 @@
 ---
 id: APT-48
 title: Declare the ADHD ideation skill in stamped projects
-status: In Progress
+status: Done
 created_date: 2026-11-12 21:11
-updated_date: 2026-11-19 21:10
+updated_date: 2026-11-19 21:20
 orchestration:
   status_key: inprogress
   lease_owner: opencode-apt-48-adhd-skill
@@ -50,12 +50,13 @@ Agreed with the maintainer 2026-11-12: declared by default, explicit invocation 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
 2026-11-19: Implemented in worktree /Users/ben.davis/code/personal/templates/agentic-project-template/.worktrees/apt-48-adhd-skill-v2 on branch apt-48-adhd-skill-v2, based on APT-47 0781de2. Files owned by this slice: template/agents.toml.jinja, fragments/tools/dotagents/{mise.toml,agents.md}, src/agentic_project_template/merge.py, tests/test_dotagents_projection.py. RED: initial focused test failed because ADHD was not declared. GREEN: 4 focused tests passed including migration tripwire; full mise run test 116 passed, 17 Copier dirty-worktree warnings; mise run lint all prek hooks passed. Real fresh-user dotagents refresh ran twice, projecting adhd, tdd, grilling, writing-for-agents. Discovered and fixed refresh failure removing existing manifest declarations; synthetic stub proves failed ADHD refresh restores existing manifest and exits nonzero. Stamp matrix: pending.
 Stamp matrix first attempt after the 116-test suite failed in its update fixture: Copier run_update could not resolve uncommitted-template pathspec 2184a76. This is not reported as a passing matrix; rerun after committing implementation to provide durable provenance.
+Wrap-up resume and ownership: implementation commit e8ae66d; retrospective commit 237c0ea; parent PR #17 merged as d8d3bf1. Worktree /Users/ben.davis/code/personal/templates/agentic-project-template/.worktrees/apt-48-adhd-skill-v2; branch apt-48-adhd-skill-v2. Untracked .pr-body.md is publication metadata, not implementation. All six APT-48 acceptance criteria are satisfied; remaining cleanup is limited to confirmed merged owned worktrees. APT-57 is the new stale-worktree environment follow-up; it is not started.
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-
+Merged PR #26 as 953ae230b3b7cb4ed144843ba467cc16689bb965 on 2026-11-19. ADHD is declared and documented for explicit /adhd invocation only. Full current-main verification: 116 tests passed, all prek hooks passed, stamp matrix passed. Real fresh-user projection included adhd, tdd, grilling, writing-for-agents. Failed catalog refresh now restores agents.toml.
 <!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
