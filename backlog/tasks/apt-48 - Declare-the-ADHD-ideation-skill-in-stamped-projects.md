@@ -1,9 +1,9 @@
 ---
 id: APT-48
 title: Declare the ADHD ideation skill in stamped projects
-status: To Do
+status: In Progress
 created_date: 2026-11-12 21:11
-updated_date: 2026-11-12 21:11
+updated_date: 2026-11-19 21:10
 orchestration:
   status_key: inprogress
   lease_owner: opencode-apt-48-adhd-skill
@@ -37,18 +37,19 @@ Agreed with the maintainer 2026-11-12: declared by default, explicit invocation 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 template/agents.toml.jinja declares UditAkhourii/adhd as a plugin source
-- [ ] #2 fragments/tools/dotagents/mise.toml trusts UditAkhourii/adhd in both scopes and adds it in dotagents-add
-- [ ] #3 The stamped AGENTS.md names /adhd as explicit invocation for open-ended design work and does not claim auto-trigger
-- [ ] #4 A stamp test fails before the change and asserts the declaration and trust entry in a stamped child afterward
-- [ ] #5 merge.py maps the prior dotagents-add body so an existing project picks up the new source on update
-- [ ] #6 mise run test and mise run check pass; outcomes reported exactly
+- [x] #1 template/agents.toml.jinja declares UditAkhourii/adhd as a plugin source
+- [x] #2 fragments/tools/dotagents/mise.toml trusts UditAkhourii/adhd in both scopes and adds it in dotagents-add
+- [x] #3 The stamped AGENTS.md names /adhd as explicit invocation for open-ended design work and does not claim auto-trigger
+- [x] #4 A stamp test fails before the change and asserts the declaration and trust entry in a stamped child afterward
+- [x] #5 merge.py maps the prior dotagents-add body so an existing project picks up the new source on update
+- [x] #6 mise run test and mise run check pass; outcomes reported exactly
 <!-- AC:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
-
+2026-11-19: Implemented in worktree /Users/ben.davis/code/personal/templates/agentic-project-template/.worktrees/apt-48-adhd-skill-v2 on branch apt-48-adhd-skill-v2, based on APT-47 0781de2. Files owned by this slice: template/agents.toml.jinja, fragments/tools/dotagents/{mise.toml,agents.md}, src/agentic_project_template/merge.py, tests/test_dotagents_projection.py. RED: initial focused test failed because ADHD was not declared. GREEN: 4 focused tests passed including migration tripwire; full mise run test 116 passed, 17 Copier dirty-worktree warnings; mise run lint all prek hooks passed. Real fresh-user dotagents refresh ran twice, projecting adhd, tdd, grilling, writing-for-agents. Discovered and fixed refresh failure removing existing manifest declarations; synthetic stub proves failed ADHD refresh restores existing manifest and exits nonzero. Stamp matrix: pending.
+Stamp matrix first attempt after the 116-test suite failed in its update fixture: Copier run_update could not resolve uncommitted-template pathspec 2184a76. This is not reported as a passing matrix; rerun after committing implementation to provide durable provenance.
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
 
 ## Final Summary
