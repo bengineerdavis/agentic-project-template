@@ -46,6 +46,14 @@ Blocked adjacent work (session wrap-up 2026-11-19): the requested V2/`.jsonc` co
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
 
+Session retro (2026-11-19, wrap-up; probe commit 138d7ff pushed to main):
+
+- Went right: worktree isolation (dotagents-v2-probe) kept all probing off main and was removed neutral; findings landed as APT-56 with a re-probe baseline; the foreign-dirty-file gate correctly stopped the root opencode.json conversion from capturing another session's edits.
+- Went wrong: the repo moved (~/code/templates → ~/code/personal/templates) mid-session, stranding the old path as a husk and breaking worktree paths plus .venv shebangs; several probe commands were lost to location restarts and re-run.
+- Negative results (verified, not just observed): dotagents `mcp remove` edits only agents.toml; `sync` never prunes a projection whose declaration was removed (mcp-writer early-returns at zero declarations); against a V2 file, add+remove+sync leaves a stale duplicate entry beside mcp.servers.
+- Lesson for any session in this repo: after a directory move, .venv/bin/\* shebangs still point at the old absolute path and every venv command fails with "bad interpreter" — rebuild with `uv venv --clear && uv sync` before reporting commands as unrunnable; check the shebangs first.
+- Open follow-ups: ACs #1–#4 below. No other work opened.
+
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
 
 ## Final Summary
