@@ -347,3 +347,25 @@ def test_merge_json_unions_instructions(tmp_path) -> None:
     doc = json.loads(target.read_text())
     assert doc["mode"] == "build"
     assert set(doc["instructions"]) == {".context/old.md", ".context/ai-rules.md"}
+
+
+def test_update_drops_the_retired_adhd_plugin_source(tmp_path) -> None:
+    """A project stamped while apt-48 declared ADHD must lose it on update.
+
+    deep_merge keeps the base's entries, so without an explicit retirement
+    the mistaken declaration would survive every future update.
+    """
+    from agentic_project_template.merge import drop_retired_plugins
+
+    doc = {
+        "plugins": [
+            {"name": "mattpocock-skills", "source": "mattpocock/skills"},
+            {"name": "adhd", "source": "UditAkhourii/adhd"},
+        ]
+    }
+    warnings = drop_retired_plugins(doc)
+    assert doc["plugins"] == [
+        {"name": "mattpocock-skills", "source": "mattpocock/skills"}
+    ]
+    assert any("UditAkhourii/adhd" in warning for warning in warnings)
+    assert drop_retired_plugins(doc) == []

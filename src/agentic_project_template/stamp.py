@@ -23,6 +23,7 @@ import yaml
 from .merge import (
     append_gitignore_lines,
     deep_merge,
+    drop_retired_plugins,
     dump_toml,
     load_toml,
     load_yaml,
@@ -105,7 +106,11 @@ def _merge_rendered(kind: str, src: Path, target: Path) -> list[str]:
     if kind == "json":
         return merge_json_file(target, json.loads(src.read_text(encoding="utf-8")))
     if kind == "toml":
-        return merge_toml_file(target, load_toml(src))
+        existing = load_toml(target) if target.exists() else {}
+        retired = drop_retired_plugins(existing)
+        if retired:
+            dump_toml(existing, target)
+        return retired + merge_toml_file(target, load_toml(src))
     if kind == "yaml":
         base = load_yaml(target) or {}
         overlay = load_yaml(src) or {}

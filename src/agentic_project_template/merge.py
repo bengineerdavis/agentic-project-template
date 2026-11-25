@@ -153,6 +153,47 @@ def merge_toml_file(destination: Path, overlay_doc: dict) -> list[str]:
     return warnings
 
 
+# Plugin sources the layer declared and then withdrew. deep_merge keeps the
+# base's entries, so a project stamped while one was declared would carry it
+# forever; the layer wrote it, so the layer retires it. Same provenance
+# argument as the legacy registry-pin removal above.
+_RETIRED_PLUGIN_SOURCES: dict[str, str] = {
+    # apt-58: declared by PR #26 and never chosen by the maintainer. The
+    # ADHD output style the maintainer uses is a personal OpenCode
+    # integration (chezmoi DOT-349), not a per-project declaration.
+    "UditAkhourii/adhd": "declared in error by apt-48 and withdrawn in apt-58",
+}
+
+
+def drop_retired_plugins(doc: dict) -> list[str]:
+    """Remove withdrawn layer-declared plugin sources from a manifest."""
+    plugins = doc.get("plugins")
+    if not isinstance(plugins, list):
+        return []
+    kept = [
+        plugin
+        for plugin in plugins
+        if not (
+            isinstance(plugin, dict) and plugin.get("source") in _RETIRED_PLUGIN_SOURCES
+        )
+    ]
+    if len(kept) == len(plugins):
+        return []
+    removed = sorted(
+        {
+            plugin["source"]
+            for plugin in plugins
+            if isinstance(plugin, dict)
+            and plugin.get("source") in _RETIRED_PLUGIN_SOURCES
+        }
+    )
+    doc["plugins"] = kept
+    return [
+        f"removed retired plugin source {source}: {_RETIRED_PLUGIN_SOURCES[source]}"
+        for source in removed
+    ]
+
+
 def merge_mise_fragment(destination: Path, overlay_doc: dict) -> list[str]:
     """Merge the layer's mise fragment into the project's mise.toml.
 
@@ -225,6 +266,8 @@ def merge_mise_fragment(destination: Path, overlay_doc: dict) -> list[str]:
 # content — the same provenance argument as the legacy registry-pin removal.
 _LAYER_AUTHORED_SCRIPTS: frozenset[str] = frozenset(
     {
+        # 953ae23 (ADHD declaration, removed in apt-58)
+        '# Add requires project-scoped trust; later projection also reads user-scoped\n# trust. `trust add` rejects an already-trusted source, so check each scope.\n# Only these reviewed sources are trusted; other installer failures still stop.\nfor source in mattpocock/skills UditAkhourii/adhd bengineerdavis/ai-prompt-library; do\n  grep -Fq "\\"$source\\"" agents.toml ||\n    dotagents --project trust add "$source"\n  grep -Fq "\\"$source\\"" "${DOTAGENTS_HOME:-$HOME/.agents}/agents.toml" ||\n    dotagents --user trust add "$source"\ndone\n# dotagents add removes existing declarations if a catalog refresh fails.\n# Keep a backup and restore it on failure so the project stays unchanged.\nmanifest_backup="$(mktemp "${TMPDIR:-/tmp}/agentic-dotagents.XXXXXX.toml")"\ncp agents.toml "$manifest_backup"\nif ! {\n  dotagents --project add mattpocock/skills --all &&\n  dotagents --project add UditAkhourii/adhd --all\n}; then\n  cp "$manifest_backup" agents.toml\n  rm -f "$manifest_backup"\n  echo "dotagents source refresh failed; restored the existing agents.toml" >&2\n  exit 1\nfi\nrm -f "$manifest_backup"\ndotagents --project install\n',
         # 36dc1cf (fresh-user trust fix, before ADHD and refresh rollback)
         '# Add requires project-scoped trust; later projection also reads user-scoped\n# trust. `trust add` rejects an already-trusted source, so check each scope.\n# Only these reviewed sources are trusted; other installer failures still stop.\nfor source in mattpocock/skills bengineerdavis/ai-prompt-library; do\n  grep -Fq "\\"$source\\"" agents.toml ||\n    dotagents --project trust add "$source"\n  grep -Fq "\\"$source\\"" "${DOTAGENTS_HOME:-$HOME/.agents}/agents.toml" ||\n    dotagents --user trust add "$source"\ndone\ndotagents --project add mattpocock/skills --all\ndotagents --project install\n',
         # 0b6d651 (first published refresh before the fresh-user trust fix)

@@ -1,9 +1,9 @@
 ---
 id: APT-48
 title: Declare the ADHD ideation skill in stamped projects
-status: To Do
+status: Done
 created_date: 2026-11-12 21:11
-updated_date: 2026-11-12 21:11
+updated_date: 2026-11-21 22:14
 orchestration:
   status_key: todo
   version: 2
@@ -12,6 +12,7 @@ orchestration:
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
+
 APT-47 gives stamped projects the reviewed Matt Pocock workflow plugin. The other skill reaching this maintainer's agents daily is ADHD (UditAkhourii/adhd, MIT), which arrives only through a personal Claude plugin sync, so a stamped project never sees it. ADHD costs roughly ten agent calls per run, which makes auto-triggering the wrong default even where the skill is worth having.
 
 Ship:
@@ -31,21 +32,27 @@ Constraints:
 - report test and lint outcomes exactly; a projection that does not appear in a real stamped child is not a pass
 
 Agreed with the maintainer 2026-11-12: declared by default, explicit invocation only, no copier flag.
+
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
+
 <!-- AC:BEGIN -->
+
 - [ ] #1 template/agents.toml.jinja declares UditAkhourii/adhd as a plugin source
 - [ ] #2 fragments/tools/dotagents/mise.toml trusts UditAkhourii/adhd in both scopes and adds it in dotagents-add
 - [ ] #3 The stamped AGENTS.md names /adhd as explicit invocation for open-ended design work and does not claim auto-trigger
 - [ ] #4 A stamp test fails before the change and asserts the declaration and trust entry in a stamped child afterward
 - [ ] #5 merge.py maps the prior dotagents-add body so an existing project picks up the new source on update
 - [ ] #6 mise run test and mise run check pass; outcomes reported exactly
+
 <!-- AC:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:IMPLEMENTATION_NOTES:BEGIN -->
+
+2026-11-21: This task's premise is wrong and must not be implemented again. It names `UditAkhourii/adhd`, a parallel-ideation skill; the maintainer asked for `ayghri/i-have-adhd`, which formats output. The correction was made in conversation on 2026-11-12 and never written here, so PR #26 built and merged the wrong source on 2026-11-19. APT-58 replaces the declaration and adds the `include_adhd` question and the off switch this task omitted. Leave PR #26 in history; do not revert it.
 
 <!-- SECTION:IMPLEMENTATION_NOTES:END -->
 
@@ -56,12 +63,17 @@ Agreed with the maintainer 2026-11-12: declared by default, explicit invocation 
 <!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
+
 <!-- DOD:BEGIN -->
+
 <!-- DOD:END -->
 
 ## Run History
+
 <!-- SECTION:RUN_HISTORY:BEGIN -->
+
 <!-- RUN_HISTORY_ENTRY:BEGIN -->
+
 ```yaml
 event_id: run-6616384e708d45dab94715983ef78c3c
 type: claim_task
@@ -74,8 +86,11 @@ to_status: inprogress
 metadata:
   lease_ttl_seconds: '3600'
 ```
+
 <!-- RUN_HISTORY_ENTRY:END -->
+
 <!-- RUN_HISTORY_ENTRY:BEGIN -->
+
 ```yaml
 event_id: run-bb06788dd8524fe487887221e5909535
 type: release_task
@@ -86,5 +101,7 @@ task_id: APT-48
 from_status: inprogress
 to_status: todo
 ```
+
 <!-- RUN_HISTORY_ENTRY:END -->
+
 <!-- SECTION:RUN_HISTORY:END -->
