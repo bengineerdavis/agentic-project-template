@@ -17,7 +17,7 @@ run = '''
 # Add requires project-scoped trust; later projection also reads user-scoped
 # trust. `trust add` rejects an already-trusted source, so check each scope.
 # Only these reviewed sources are trusted; other installer failures still stop.
-for source in mattpocock/skills UditAkhourii/adhd bengineerdavis/ai-prompt-library; do
+for source in mattpocock/skills bengineerdavis/ai-prompt-library; do
   grep -Fq "\"$source\"" agents.toml ||
     dotagents --project trust add "$source"
   grep -Fq "\"$source\"" "${DOTAGENTS_HOME:-$HOME/.agents}/agents.toml" ||
@@ -27,10 +27,7 @@ done
 # Keep a backup and restore it on failure so the project stays unchanged.
 manifest_backup="$(mktemp "${TMPDIR:-/tmp}/agentic-dotagents.XXXXXX.toml")"
 cp agents.toml "$manifest_backup"
-if ! {
-  dotagents --project add mattpocock/skills --all &&
-  dotagents --project add UditAkhourii/adhd --all
-}; then
+if ! dotagents --project add mattpocock/skills --all; then
   cp "$manifest_backup" agents.toml
   rm -f "$manifest_backup"
   echo "dotagents source refresh failed; restored the existing agents.toml" >&2

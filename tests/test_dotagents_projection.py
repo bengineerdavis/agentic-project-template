@@ -11,10 +11,9 @@ from agentic_project_template.stamp import apply_layer, default_data, render_lay
 
 REVIEWED_SOURCES = (
     "mattpocock/skills",
-    "UditAkhourii/adhd",
     "bengineerdavis/ai-prompt-library",
 )
-EXPECTED_SKILLS = ("tdd", "grilling", "writing-for-agents", "adhd")
+EXPECTED_SKILLS = ("tdd", "grilling", "writing-for-agents")
 
 
 def _dotagents(
@@ -47,7 +46,6 @@ def test_bootstrap_refreshes_the_shared_workflow_source(tmp_path: Path) -> None:
     manifest = tomllib.loads((project / "agents.toml").read_text())
     assert manifest["plugins"] == [
         {"name": "mattpocock-skills", "source": "mattpocock/skills"},
-        {"name": "adhd", "source": "UditAkhourii/adhd"},
     ]
     mise = tomllib.loads((project / "mise.toml").read_text())
     refresh = mise["tasks"]["dotagents-add"]["run"]
@@ -56,13 +54,19 @@ def test_bootstrap_refreshes_the_shared_workflow_source(tmp_path: Path) -> None:
     assert refresh.index("add mattpocock/skills --all") < refresh.index(
         "--project install"
     )
-    assert refresh.index("add UditAkhourii/adhd --all") < refresh.index(
-        "--project install"
-    )
     assert "mise run dotagents-add" in mise["tasks"]["install"]["run"]
-    instructions = (project / "AGENTS.md").read_text()
-    assert "Invoke `/adhd` explicitly for open-ended design" in instructions
-    assert "does not auto-trigger" in instructions
+
+
+def test_stamped_project_declares_no_adhd_skill(tmp_path: Path) -> None:
+    """PR #26 declared a skill the maintainer never chose (APT-58).
+
+    The style the maintainer does want is a personal OpenCode integration
+    (chezmoi DOT-349), not something a generated project carries.
+    """
+    project = tmp_path / "stamped"
+    _stamp(project)
+    for name in ("agents.toml", "mise.toml", "AGENTS.md"):
+        assert "adhd" not in (project / name).read_text().lower()
 
 
 def test_failed_catalog_refresh_restores_existing_manifest(tmp_path: Path) -> None:
@@ -84,13 +88,15 @@ def test_failed_catalog_refresh_restores_existing_manifest(tmp_path: Path) -> No
     bin_dir.mkdir()
     calls = tmp_path / "calls"
     fake = bin_dir / "dotagents"
+    # dotagents truncates the manifest as it refreshes, then fails. The task
+    # must put the original back rather than leave the damaged file.
     fake.write_text(
         "#!/usr/bin/env bash\n"
         f"printf '%s\\n' \"$*\" >> {calls}\n"
         "if [[ \"$*\" == *'trust add'* ]]; then exit 0; fi\n"
         "if [[ \"$*\" == *'add mattpocock/skills'* ]]; then\n"
         "  printf 'version = 1\\nagents = [\\\"opencode\\\"]\\n' > agents.toml\n"
-        "  exit 0\n"
+        "  exit 1\n"
         "fi\n"
         "exit 1\n"
     )
@@ -138,7 +144,7 @@ def test_fresh_user_bootstrap_converges_and_projects_skills(tmp_path: Path) -> N
             if not user_config.exists() or repo not in user_config.read_text():
                 result = _dotagents(project, home, "user", "trust", "add", repo)
                 assert result.returncode == 0, result.stdout + result.stderr
-        for source in ("mattpocock/skills", "UditAkhourii/adhd"):
+        for source in ("mattpocock/skills",):
             result = _dotagents(project, home, "project", "add", source, "--all")
             assert result.returncode == 0, result.stdout + result.stderr
         result = _dotagents(project, home, "project", "install")
